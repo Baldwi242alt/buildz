@@ -85,7 +85,7 @@ describe('M0: real PostgreSQL, authentication and contract',()=>{
     const leaked=await sql<{actor:string|null}>`select nullif(current_setting('app.actor_id',true),'') as actor`.execute(runtime.db);expect(leaked.rows[0]?.actor).toBeNull();
   });
   it('reruns migrations without duplicating data',async()=>{await migrate(db.adminUrl);const r=await admin.query('select count(*) from app.institutions');expect(Number(r.rows[0].count)).toBe(2);});
-  it('returns a matching contract for every implemented route',()=>{expect(routes.length).toBe(79);expect(new Set(routes.map(r=>r.operation.operationId)).size).toBe(79);});
+  it('returns a matching contract for every implemented route',()=>{expect(routes.length).toBe(86);expect(new Set(routes.map(r=>r.operation.operationId)).size).toBe(86);});
 });
 
 describe('M1: schools, project teams and consent',()=>{

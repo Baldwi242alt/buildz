@@ -1,11 +1,12 @@
 openapi: 3.0.3
 info:
   title: BuildZ API
-  version: 0.2.1
-  description: M0-M6 hackathon backend. Private authenticated workflows and explicit anonymous public projections. All
-    times are UTC ISO-8601. Monetary amounts are integer minor units. Notifications use authenticated polling; payments
-    are school-managed, not charged by BuildZ. Private file uploads are synchronous, at most 2 MiB per file/50 MiB per
-    project, with signature checks but no malware-scan guarantee.
+  version: 0.3.0
+  description: M0-M6 hackathon backend. Private authenticated workflows and explicit anonymous public
+    projections. All times are UTC ISO-8601. Monetary amounts are integer minor units. Notifications use
+    authenticated polling; payments are school-managed, not charged by BuildZ. Private file uploads are
+    synchronous, at most 2 MiB per file/50 MiB per project, with signature checks but no malware-scan
+    guarantee.
 servers:
   - url: http://localhost:3001
     description: Local backend
@@ -34,8 +35,8 @@ paths:
                   - data
                   - meta
         default:
-          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422 invalid input,
-            429 rate limit.
+          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422
+            invalid input, 429 rate limit.
           content:
             application/json:
               schema:
@@ -63,8 +64,8 @@ paths:
                   - data
                   - meta
         default:
-          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422 invalid input,
-            429 rate limit.
+          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422
+            invalid input, 429 rate limit.
           content:
             application/json:
               schema:
@@ -92,8 +93,8 @@ paths:
                   - data
                   - meta
         default:
-          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422 invalid input,
-            429 rate limit.
+          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422
+            invalid input, 429 rate limit.
           content:
             application/json:
               schema:
@@ -121,8 +122,8 @@ paths:
                   - data
                   - meta
         default:
-          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422 invalid input,
-            429 rate limit.
+          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422
+            invalid input, 429 rate limit.
           content:
             application/json:
               schema:
@@ -148,8 +149,8 @@ paths:
                   - data
                   - meta
         default:
-          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422 invalid input,
-            429 rate limit.
+          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422
+            invalid input, 429 rate limit.
           content:
             application/json:
               schema:
@@ -184,8 +185,8 @@ paths:
                   - data
                   - meta
         default:
-          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422 invalid input,
-            429 rate limit.
+          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422
+            invalid input, 429 rate limit.
           content:
             application/json:
               schema:
@@ -218,8 +219,8 @@ paths:
                   - data
                   - meta
         default:
-          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422 invalid input,
-            429 rate limit.
+          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422
+            invalid input, 429 rate limit.
           content:
             application/json:
               schema:
@@ -258,8 +259,8 @@ paths:
                   - data
                   - meta
         default:
-          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422 invalid input,
-            429 rate limit.
+          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422
+            invalid input, 429 rate limit.
           content:
             application/json:
               schema:
@@ -300,8 +301,8 @@ paths:
                   - data
                   - meta
         default:
-          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422 invalid input,
-            429 rate limit.
+          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422
+            invalid input, 429 rate limit.
           content:
             application/json:
               schema:
@@ -340,8 +341,8 @@ paths:
                   - data
                   - meta
         default:
-          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422 invalid input,
-            429 rate limit.
+          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422
+            invalid input, 429 rate limit.
           content:
             application/json:
               schema:
@@ -390,8 +391,8 @@ paths:
                   - data
                   - meta
         default:
-          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422 invalid input,
-            429 rate limit.
+          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422
+            invalid input, 429 rate limit.
           content:
             application/json:
               schema:
@@ -424,8 +425,8 @@ paths:
                   - data
                   - meta
         default:
-          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422 invalid input,
-            429 rate limit.
+          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422
+            invalid input, 429 rate limit.
           content:
             application/json:
               schema:
@@ -465,8 +466,8 @@ paths:
                   - data
                   - meta
         default:
-          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422 invalid input,
-            429 rate limit.
+          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422
+            invalid input, 429 rate limit.
           content:
             application/json:
               schema:
@@ -498,8 +499,8 @@ paths:
                   - data
                   - meta
         default:
-          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422 invalid input,
-            429 rate limit.
+          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422
+            invalid input, 429 rate limit.
           content:
             application/json:
               schema:
@@ -544,8 +545,8 @@ paths:
                   - data
                   - meta
         default:
-          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422 invalid input,
-            429 rate limit.
+          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422
+            invalid input, 429 rate limit.
           content:
             application/json:
               schema:
@@ -587,8 +588,8 @@ paths:
                   - data
                   - meta
         default:
-          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422 invalid input,
-            429 rate limit.
+          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422
+            invalid input, 429 rate limit.
           content:
             application/json:
               schema:
@@ -633,8 +634,8 @@ paths:
                   - data
                   - meta
         default:
-          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422 invalid input,
-            429 rate limit.
+          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422
+            invalid input, 429 rate limit.
           content:
             application/json:
               schema:
@@ -680,8 +681,8 @@ paths:
                   - data
                   - meta
         default:
-          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422 invalid input,
-            429 rate limit.
+          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422
+            invalid input, 429 rate limit.
           content:
             application/json:
               schema:
@@ -727,8 +728,8 @@ paths:
                   - data
                   - meta
         default:
-          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422 invalid input,
-            429 rate limit.
+          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422
+            invalid input, 429 rate limit.
           content:
             application/json:
               schema:
@@ -777,8 +778,8 @@ paths:
                   - data
                   - meta
         default:
-          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422 invalid input,
-            429 rate limit.
+          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422
+            invalid input, 429 rate limit.
           content:
             application/json:
               schema:
@@ -812,8 +813,8 @@ paths:
                   - data
                   - meta
         default:
-          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422 invalid input,
-            429 rate limit.
+          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422
+            invalid input, 429 rate limit.
           content:
             application/json:
               schema:
@@ -852,8 +853,8 @@ paths:
                   - data
                   - meta
         default:
-          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422 invalid input,
-            429 rate limit.
+          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422
+            invalid input, 429 rate limit.
           content:
             application/json:
               schema:
@@ -893,8 +894,8 @@ paths:
                   - data
                   - meta
         default:
-          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422 invalid input,
-            429 rate limit.
+          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422
+            invalid input, 429 rate limit.
           content:
             application/json:
               schema:
@@ -934,8 +935,8 @@ paths:
                   - data
                   - meta
         default:
-          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422 invalid input,
-            429 rate limit.
+          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422
+            invalid input, 429 rate limit.
           content:
             application/json:
               schema:
@@ -3508,6 +3509,268 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+  /v1/projects/{id}/team-calendar:
+    get:
+      operationId: getTeamCalendar
+      summary: getTeamCalendar
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: &a2
+            type: string
+            format: uuid
+        - &a3
+          name: startsAt
+          in: query
+          required: true
+          schema: &a1
+            type: string
+            format: date-time
+        - &a4
+          name: endsAt
+          in: query
+          required: true
+          schema: *a1
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    $ref: "#/components/schemas/TeamCalendar"
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/resources/{id}/calendar:
+    get:
+      operationId: getResourceCalendar
+      summary: getResourceCalendar
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: *a2
+        - *a3
+        - *a4
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    $ref: "#/components/schemas/ResourceCalendar"
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/mentors:
+    get:
+      operationId: listMentors
+      summary: listMentors
+      parameters:
+        - name: institutionId
+          in: query
+          required: false
+          schema: *a2
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Mentor"
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/projects/{id}/mentorships:
+    get:
+      operationId: listProjectMentorships
+      summary: listProjectMentorships
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: *a2
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Mentorship"
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    post:
+      operationId: requestMentorship
+      summary: requestMentorship
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: *a2
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            minLength: 8
+            maxLength: 128
+      responses:
+        "201":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Mentorship"
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RequestMentorship"
+      x-idempotent: true
+  /v1/mentorships:
+    get:
+      operationId: listMentorships
+      summary: listMentorships
+      parameters: []
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Mentorship"
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/mentorships/{id}/decisions:
+    post:
+      operationId: decideMentorship
+      summary: decideMentorship
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: *a2
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            minLength: 8
+            maxLength: 128
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Mentorship"
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DecideMentorship"
+      x-idempotent: true
 components:
   securitySchemes:
     bearerAuth:
@@ -5852,3 +6115,147 @@ components:
         - sizeBytes
         - sha256
         - contentBase64
+    CalendarSpan:
+      type: object
+      additionalProperties: false
+      properties:
+        startsAt: *a1
+        endsAt: *a1
+      required:
+        - startsAt
+        - endsAt
+    ResourceCalendar:
+      type: object
+      additionalProperties: false
+      properties:
+        windows:
+          type: array
+          items:
+            $ref: "#/components/schemas/CalendarSpan"
+        busy:
+          type: array
+          items:
+            $ref: "#/components/schemas/CalendarSpan"
+      required:
+        - windows
+        - busy
+    TeamCalendar:
+      type: object
+      additionalProperties: false
+      properties:
+        members:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            properties:
+              userId: *a2
+              displayName:
+                type: string
+                minLength: 1
+                maxLength: 100
+                pattern: .*\S.*
+              windows:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CalendarSpan"
+              busy:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CalendarSpan"
+            required:
+              - userId
+              - displayName
+              - windows
+              - busy
+      required:
+        - members
+    Mentor:
+      type: object
+      additionalProperties: false
+      properties:
+        userId: *a2
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          pattern: .*\S.*
+        institutionId: *a2
+      required:
+        - userId
+        - displayName
+        - institutionId
+    Mentorship:
+      type: object
+      additionalProperties: false
+      properties:
+        id: *a2
+        projectId: *a2
+        mentorId: *a2
+        requestedBy: *a2
+        message:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          pattern: .*\S.*
+        state:
+          type: string
+          enum:
+            - pending
+            - accepted
+            - declined
+            - cancelled
+        version:
+          type: integer
+          minimum: 1
+        createdAt: *a1
+        mentorDisplayName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          pattern: .*\S.*
+        projectTitle:
+          type: string
+          minLength: 1
+          maxLength: 150
+          pattern: .*\S.*
+      required:
+        - id
+        - projectId
+        - mentorId
+        - requestedBy
+        - message
+        - state
+        - version
+        - createdAt
+        - mentorDisplayName
+        - projectTitle
+    RequestMentorship:
+      type: object
+      additionalProperties: false
+      properties:
+        mentorId: *a2
+        message:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          pattern: .*\S.*
+      required:
+        - mentorId
+        - message
+    DecideMentorship:
+      type: object
+      additionalProperties: false
+      properties:
+        version:
+          type: integer
+          minimum: 1
+        decision:
+          type: string
+          enum:
+            - accepted
+            - declined
+            - cancelled
+      required:
+        - version
+        - decision

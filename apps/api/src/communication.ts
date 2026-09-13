@@ -88,6 +88,9 @@ export async function bookConsultation(ctx: Context) {
     ctx,
     sql`select * from app.consultation_slots where id=${ctx.body.slotId as string}::uuid`,
   );
+  const accepted=await many(ctx,sql`select id from app.mentorships where project_id=${ctx.body.projectId as string}::uuid and mentor_id=${s.hostId}::uuid and state='accepted' for update`);
+  if(!accepted.length) throw conflict('MENTORSHIP_REQUIRED','This mentor must accept your project’s mentorship request before you can book.');
+  await permitted(ctx,sql<boolean>`app.accepted_mentor(${ctx.body.projectId as string}::uuid,${s.hostId}::uuid)`);
   if (!s.active || Date.parse(s.startsAt) <= Date.now())
     throw conflict(
       'SLOT_UNAVAILABLE',

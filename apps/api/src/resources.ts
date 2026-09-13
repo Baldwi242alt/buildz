@@ -19,6 +19,22 @@ export async function getResource(ctx: Context) {
     sql`select *,null::float8 as distance_km from app.resources where id=${ctx.params.id}::uuid`,
   );
 }
+export async function getResourceCalendar(ctx: Context) {
+  await getResource(ctx);
+  const {from,to}=interval(ctx.query.startsAt,ctx.query.endsAt,24*42);
+  const windows=await many(ctx,sql`select greatest(starts_at,${from}::timestamptz) as starts_at,least(ends_at,${to}::timestamptz) as ends_at from app.resource_windows where resource_id=${ctx.params.id}::uuid and starts_at<${to} and ends_at>${from} order by starts_at`);
+  const busy=await many(ctx,sql`select greatest(starts_at,${from}::timestamptz) as starts_at,least(ends_at,${to}::timestamptz) as ends_at from app.resource_busy(${ctx.params.id}::uuid,${from},${to}) order by starts_at`);
+  return {windows,busy};
+}
+export async function getTeamCalendar(ctx: Context) {
+  await permitted(ctx,sql<boolean>`app.is_project_member(${ctx.params.id}::uuid)`);
+  const {from,to}=interval(ctx.query.startsAt,ctx.query.endsAt,24*42);
+  const members=await many(ctx,sql`select m.user_id,p.display_name from app.project_memberships m join app.profiles p on p.id=m.user_id where m.project_id=${ctx.params.id}::uuid order by p.display_name,m.user_id`);
+  const ids=members.map(m=>m.userId);
+  const windows=await many(ctx,sql`select user_id,greatest(starts_at,${from}::timestamptz) as starts_at,least(ends_at,${to}::timestamptz) as ends_at from app.team_windows(${ctx.params.id}::uuid,${ids}::uuid[],${from},${to}) order by starts_at`);
+  const busy=await many(ctx,sql`select user_id,greatest(starts_at,${from}::timestamptz) as starts_at,least(ends_at,${to}::timestamptz) as ends_at from app.team_busy(${ctx.params.id}::uuid,${ids}::uuid[],${from},${to}) order by starts_at`);
+  return {members:members.map(m=>({...m,windows:windows.filter(w=>w.userId===m.userId).map(({userId,...w})=>w),busy:busy.filter(w=>w.userId===m.userId).map(({userId,...w})=>w)}))};
+}
 export async function createResource(ctx: Context) {
   const b = ctx.body;
   const r = await one(

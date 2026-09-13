@@ -6,7 +6,7 @@ import pg from 'pg';
 
 // Operator-only helper. Never import this into a deployed application or print its configuration.
 const mode = process.argv[2] ?? 'check';
-if (!['check', 'migrate', 'provision', 'cron', 'cron-status', 'demo-bootstrap', 'demo-check'].includes(mode)) throw new Error('Use check, migrate, provision, cron, cron-status, demo-bootstrap or demo-check.');
+if (!['check', 'migrate', 'provision', 'cron', 'cron-status', 'demo-bootstrap', 'demo-check', 'demo-content'].includes(mode)) throw new Error('Use check, migrate, provision, cron, cron-status, demo-bootstrap, demo-check or demo-content.');
 let password = '';
 let connectionString = '';
 try {
@@ -33,6 +33,7 @@ try {
     const result = await client.query("select current_user as role, current_database() as database, to_regnamespace('app') is not null as app_schema_exists");
     if (result.rows[0]?.role !== 'postgres') throw new Error('Expected the migration owner role.');
     console.log('Verified TLS database connection:', JSON.stringify(result.rows[0]));
+    if(mode==='demo-content') await (await import('./seed-hosted-demo.js')).seedHostedDemo(client);
     if (mode === 'demo-bootstrap' || mode === 'demo-check') {
       // Auth identity is created through the provider's supported admin flow,
       // never by inserting into its managed auth schema. This shared account

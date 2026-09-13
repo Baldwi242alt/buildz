@@ -1075,6 +1075,109 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/projects/{id}/team-calendar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** getTeamCalendar */
+        get: operations["getTeamCalendar"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/resources/{id}/calendar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** getResourceCalendar */
+        get: operations["getResourceCalendar"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/mentors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** listMentors */
+        get: operations["listMentors"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/projects/{id}/mentorships": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** listProjectMentorships */
+        get: operations["listProjectMentorships"];
+        put?: never;
+        /** requestMentorship */
+        post: operations["requestMentorship"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/mentorships": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** listMentorships */
+        get: operations["listMentorships"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/mentorships/{id}/decisions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** decideMentorship */
+        post: operations["decideMentorship"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1852,6 +1955,60 @@ export interface components {
             sizeBytes: number;
             sha256: string;
             contentBase64: string;
+        };
+        CalendarSpan: {
+            /** Format: date-time */
+            startsAt: string;
+            /** Format: date-time */
+            endsAt: string;
+        };
+        ResourceCalendar: {
+            windows: components["schemas"]["CalendarSpan"][];
+            busy: components["schemas"]["CalendarSpan"][];
+        };
+        TeamCalendar: {
+            members: {
+                /** Format: uuid */
+                userId: string;
+                displayName: string;
+                windows: components["schemas"]["CalendarSpan"][];
+                busy: components["schemas"]["CalendarSpan"][];
+            }[];
+        };
+        Mentor: {
+            /** Format: uuid */
+            userId: string;
+            displayName: string;
+            /** Format: uuid */
+            institutionId: string;
+        };
+        Mentorship: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            projectId: string;
+            /** Format: uuid */
+            mentorId: string;
+            /** Format: uuid */
+            requestedBy: string;
+            message: string;
+            /** @enum {string} */
+            state: "pending" | "accepted" | "declined" | "cancelled";
+            version: number;
+            /** Format: date-time */
+            createdAt: string;
+            mentorDisplayName: string;
+            projectTitle: string;
+        };
+        RequestMentorship: {
+            /** Format: uuid */
+            mentorId: string;
+            message: string;
+        };
+        DecideMentorship: {
+            version: number;
+            /** @enum {string} */
+            decision: "accepted" | "declined" | "cancelled";
         };
     };
     responses: never;
@@ -4770,6 +4927,260 @@ export interface operations {
                 };
             };
             /** @description Structured error; 401, 403, 404, 409, 422 or 429. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getTeamCalendar: {
+        parameters: {
+            query: {
+                startsAt: string;
+                endsAt: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["TeamCalendar"];
+                        meta: components["schemas"]["Meta"];
+                    };
+                };
+            };
+            /** @description Structured error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getResourceCalendar: {
+        parameters: {
+            query: {
+                startsAt: string;
+                endsAt: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["ResourceCalendar"];
+                        meta: components["schemas"]["Meta"];
+                    };
+                };
+            };
+            /** @description Structured error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listMentors: {
+        parameters: {
+            query?: {
+                institutionId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["Mentor"][];
+                        meta: components["schemas"]["Meta"];
+                    };
+                };
+            };
+            /** @description Structured error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listProjectMentorships: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["Mentorship"][];
+                        meta: components["schemas"]["Meta"];
+                    };
+                };
+            };
+            /** @description Structured error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    requestMentorship: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RequestMentorship"];
+            };
+        };
+        responses: {
+            /** @description Success */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["Mentorship"];
+                        meta: components["schemas"]["Meta"];
+                    };
+                };
+            };
+            /** @description Structured error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listMentorships: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["Mentorship"][];
+                        meta: components["schemas"]["Meta"];
+                    };
+                };
+            };
+            /** @description Structured error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    decideMentorship: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DecideMentorship"];
+            };
+        };
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data: components["schemas"]["Mentorship"];
+                        meta: components["schemas"]["Meta"];
+                    };
+                };
+            };
+            /** @description Structured error */
             default: {
                 headers: {
                     [name: string]: unknown;

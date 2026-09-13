@@ -9,6 +9,7 @@ import { localDatabase, seed, fixtures } from '../scripts/db-tools.js';
 import { asActor } from '../packages/db/src/database.js';
 import { createBuildZClient } from '../packages/sdk/src/index.js';
 import { seedDemoWorkflows } from '../scripts/seed-demo-workflows.js';
+import { seedHostedDemo } from '../scripts/seed-hosted-demo.js';
 let db: Awaited<ReturnType<typeof localDatabase>>,
   auth: Awaited<ReturnType<typeof localAuth>>,
   runtime: Awaited<ReturnType<typeof createApp>>,
@@ -612,6 +613,47 @@ describe('M3: resources, private availability, safety and atomic reservations', 
   });
 });
 
+describe('Mentorship consent and calendar privacy',()=>{
+ it('requests mentorship idempotently on a private project and only the invited mentor can accept',async()=>{
+  const p=await project();
+  const mentors=await ok(0,'GET',`/v1/mentors?institutionId=${school}`);
+  expect(mentors.some((m:any)=>m.userId===uid(3))).toBe(true);
+  expect(mentors.some((m:any)=>m.userId===uid(4))).toBe(false);
+  expect(mentors[0]).not.toHaveProperty('email');
+  expect((await req(2,'POST',`/v1/projects/${p.id}/mentorships`,{mentorId:uid(3),message:'Not my project'})).status).toBe(404);
+  expect((await req(0,'POST',`/v1/projects/${p.id}/mentorships`,{mentorId:uid(4),message:'Wrong campus'})).status).toBe(403);
+  const key=randomUUID(),body={mentorId:uid(3),message:'Explicitly shared request, not private working notes.'};
+  const responses=await Promise.all([req(0,'POST',`/v1/projects/${p.id}/mentorships`,body,key),req(0,'POST',`/v1/projects/${p.id}/mentorships`,body,key)]);
+  expect(responses.map(r=>r.status)).toEqual([201,201]);expect(responses[0].data.id).toBe(responses[1].data.id);
+  const m=responses[0].data;
+  expect((await req(0,'POST',`/v1/projects/${p.id}/mentorships`,body)).error.code).toBe('MENTORSHIP_EXISTS');
+  expect((await ok(3,'GET','/v1/mentorships')).some((x:any)=>x.id===m.id)).toBe(true);
+  expect((await ok(2,'GET','/v1/mentorships')).some((x:any)=>x.id===m.id)).toBe(false);
+  expect((await req(0,'POST',`/v1/mentorships/${m.id}/decisions`,{version:1,decision:'accepted'})).status).toBe(403);
+  const accepted=await ok(3,'POST',`/v1/mentorships/${m.id}/decisions`,{version:1,decision:'accepted'},200);
+  expect(accepted.state).toBe('accepted');expect(accepted.version).toBe(2);
+  expect((await req(3,'GET',`/v1/projects/${p.id}`)).status).toBe(404);
+  expect((await req(3,'GET',`/v1/projects/${p.id}/team-calendar?startsAt=${future(100)}&endsAt=${future(110)}`)).status).toBe(403);
+  expect((await req(3,'POST',`/v1/mentorships/${m.id}/decisions`,{version:1,decision:'cancelled'})).status).toBe(409);
+  expect((await ok(0,'POST',`/v1/mentorships/${m.id}/decisions`,{version:2,decision:'cancelled'},200)).state).toBe('cancelled');
+ });
+ it('returns clipped member free/busy spans and anonymous venue occupancy, never private booking identities',async()=>{
+  const p=await project();await addMember(p.id,2);const r=await resource();
+  await windows(r.id,future(120),future(130));
+  await ok(2,'POST','/v1/me/availability',{windows:[{startsAt:future(119),endsAt:future(125)}]},200);
+  await admin.query("insert into app.bookings(resource_id,project_id,booked_by,starts_at,ends_at,state,attendees,currency,subtotal_minor,discount_minor,total_minor) values($1,$2,$3,$4,$5,'confirmed',$6::uuid[],'SGD',0,0,0)",[r.id,p.id,uid(0),future(121),future(122),[uid(2)]]);
+  const query=`startsAt=${future(120)}&endsAt=${future(126)}`;
+  const calendar=await ok(0,'GET',`/v1/projects/${p.id}/team-calendar?${query}`);
+  const teammate=calendar.members.find((x:any)=>x.userId===uid(2));
+  expect(teammate.windows[0].startsAt).toBe(future(120));expect(teammate.busy).toHaveLength(1);
+  expect((await req(1,'GET',`/v1/projects/${p.id}/team-calendar?${query}`)).status).toBe(403);
+  expect((await req(null,'GET',`/v1/projects/${p.id}/team-calendar?${query}`)).status).toBe(401);
+  const venue=await ok(1,'GET',`/v1/resources/${r.id}/calendar?${query}`);
+  expect(venue.windows[0].endsAt).toBe(future(126));expect(venue.busy).toEqual([{startsAt:future(121),endsAt:future(122)}]);
+  expect((await req(0,'GET',`/v1/resources/${r.id}/calendar?startsAt=${future(1)}&endsAt=${future(1100)}`)).status).toBe(422);
+ });
+});
+
 describe('M4: consultations, private messages and inbox', () => {
   it('books consultation slots without granting private team membership', async () => {
     const p = await project();
@@ -622,6 +664,9 @@ describe('M4: consultations, private messages and inbox', () => {
       location: 'Mentor office',
       crossSchool: true,
     });
+    expect((await req(0,'POST','/v1/consultations',{slotId:slot.id,projectId:p.id,topic:'Too early'})).error.code).toBe('MENTORSHIP_REQUIRED');
+    const mentorship=await ok(0,'POST',`/v1/projects/${p.id}/mentorships`,{mentorId:uid(3),message:'Please advise our prototype.'});
+    await ok(3,'POST',`/v1/mentorships/${mentorship.id}/decisions`,{version:1,decision:'accepted'},200);
     const c = await ok(0, 'POST', '/v1/consultations', {
       slotId: slot.id,
       projectId: p.id,
@@ -630,6 +675,7 @@ describe('M4: consultations, private messages and inbox', () => {
     expect(c.startsAt).toBe(slot.startsAt);
     expect(c.hostId).toBe(uid(3));
     expect(c.hostDisplayName).toBeTruthy();
+    expect((await req(0,'POST',`/v1/mentorships/${mentorship.id}/decisions`,{version:2,decision:'cancelled'})).error.code).toBe('ACTIVE_CONSULTATIONS');
     expect((await req(3, 'GET', `/v1/projects/${p.id}/messages`)).status).toBe(
       403,
     );
@@ -962,5 +1008,24 @@ describe('M6: fixed school credits with immutable pricing and release ledger', (
       "select title from app.projects where id='b0120000-0000-4000-8000-000000000001'",
     );
     expect(r.rows[0].title).toContain('SolarCycle');
+  });
+  it('seeds the complete reserved campus demo additively and keeps its fourth project private',async()=>{
+    const owner=randomUUID(),campus=randomUUID();
+    await admin.query("insert into app.profiles(id,email,display_name) values($1,'demo@buildz.example','BuildZ Demo Student')",[owner]);
+    await admin.query("insert into app.institutions(id,name,slug,is_demo) values($1,'BuildZ Demo Campus','buildz-demo-campus',true)",[campus]);
+    await admin.query("insert into app.institution_memberships(institution_id,user_id,affiliation,status) values($1,$2,'student','verified')",[campus,owner]);
+    const client=new pg.Client({connectionString:db.adminUrl});await client.connect();
+    try {
+      await seedHostedDemo(client);
+      await client.query("update app.projects set title='User edited demo title' where id='bd130000-0000-4000-8000-000000000010'");
+      await seedHostedDemo(client);
+      expect((await client.query('select count(*) from app.projects where owner_id=$1',[owner])).rows[0].count).toBe('4');
+      expect((await client.query("select count(*) from app.public_projects where id::text like 'bd130000-%' and published")).rows[0].count).toBe('3');
+      expect((await client.query("select count(*) from app.public_projects where id='bd130000-0000-4000-8000-000000000013'")).rows[0].count).toBe('0');
+      expect((await client.query('select count(*) from app.role_assignments where user_id=$1',[owner])).rows[0].count).toBe('0');
+      expect((await client.query("select title from app.projects where id='bd130000-0000-4000-8000-000000000010'")).rows[0].title).toBe('User edited demo title');
+      expect((await client.query('select count(*) from app.resources where institution_id=$1',[campus])).rows[0].count).toBe('4');
+      expect((await client.query("select count(*) from app.mentorships where id::text like 'bd130000-%' and state='accepted'")).rows[0].count).toBe('3');
+    }finally{await client.end();}
   });
 });

@@ -23,6 +23,7 @@ import * as communication from './communication.js';
 import * as community from './community.js';
 import * as credits from './credits.js';
 import * as files from './files.js';
+import * as mentorship from './mentorship.js';
 const handlers:Record<string,Handler>={getMe:me,updateMe,
   listInstitutions:schools.listInstitutions,getInstitution:schools.getInstitution,requestVerification:schools.requestVerification,
   listVerifications:schools.listVerifications,decideVerification:schools.decideVerification,
@@ -30,7 +31,7 @@ const handlers:Record<string,Handler>={getMe:me,updateMe,
   transitionProject:projects.transitionProject,listMembers:projects.listMembers,removeMember:projects.removeMember,transferOwner:projects.transferOwner,
   invite:invitations.invite,getInvitation:invitations.getInvitation,listInvitations:invitations.listInvitations,
   acceptInvitation:invitations.acceptInvitation,declineInvitation:c=>invitations.decideInvitation(c,'declined'),revokeInvitation:c=>invitations.decideInvitation(c,'revoked'),
-  ...proposals,...resources,...bookings,...communication,...community,...credits,...files,reviewProjects:projects.reviewProjects};
+  ...proposals,...resources,...bookings,...communication,...community,...credits,...files,...mentorship,reviewProjects:projects.reviewProjects};
 class Runtime {
   readonly auth:Authenticator;
   constructor(readonly config:Config,readonly db:Db) {this.auth=new Authenticator(config);}
