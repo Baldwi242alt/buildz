@@ -130,3 +130,176 @@ test("recovery submits a root callback and returns a neutral confirmation", asyn
   expect(body).toMatchObject({ email: "recover@example.test" });
   expect(url).toContain("redirect_to=http%3A%2F%2F127.0.0.1%3A5174");
 });
+
+test("password checkboxes stay compact and aligned on phones and desktop and toggle with the keyboard", async ({
+  page,
+}, testInfo) => {
+  for (const width of [320, 390, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto("/");
+    for (const signup of [false, true]) {
+      if (signup)
+        await page.getByRole("button", { name: "Create an account" }).click();
+      const checkbox = page.getByRole("checkbox", {
+        name: signup ? "Show passwords" : "Show password",
+        exact: true,
+      });
+      const label = checkbox.locator("..");
+      const box = await checkbox.boundingBox();
+      const row = await label.boundingBox();
+      const text = await label.locator("span").boundingBox();
+      expect(box).toBeTruthy();
+      expect(row).toBeTruthy();
+      expect(text).toBeTruthy();
+      expect(box!.width).toBe(18);
+      expect(box!.height).toBe(18);
+      expect(row!.height).toBeGreaterThanOrEqual(44);
+      expect(text!.x).toBeGreaterThanOrEqual(box!.x + box!.width + 6);
+      expect(
+        Math.abs(text!.y + text!.height / 2 - box!.y - box!.height / 2),
+      ).toBeLessThan(3);
+      await checkbox.focus();
+      await checkbox.press("Space");
+      await expect(checkbox).toBeChecked();
+      await expect(
+        page.getByLabel(signup ? "Create password" : "Password", {
+          exact: true,
+        }),
+      ).toHaveAttribute("type", "text");
+      await checkbox.press("Space");
+      await expect(checkbox).not.toBeChecked();
+      expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth <= innerWidth,
+        ),
+      ).toBe(true);
+      if (signup) {
+        const scan = await new AxeBuilder({ page })
+          .withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"])
+          .analyze();
+        expect(scan.violations).toEqual([]);
+        await page.screenshot({
+          path: testInfo.outputPath(`signup-checkbox-${width}.png`),
+          fullPage: true,
+        });
+        await page.keyboard.press("Escape");
+      }
+    }
+  }
+});
+
+for (const flow of ["signup", "recovery"] as const) {
+  test(`${flow} email 429 preserves the draft, gives recovery guidance and respects Retry-After`, async ({
+    page,
+  }) => {
+    let calls = 0;
+    await page.route("https://buildz-auth.example.test/**", async (route) => {
+      calls++;
+      await route.fulfill({
+        status: 429,
+        headers: {
+          "Retry-After": "3",
+          "Access-Control-Expose-Headers": "Retry-After",
+        },
+        contentType: "application/json",
+        body: JSON.stringify({
+          error_code: "over_email_send_rate_limit",
+          msg: "email rate limit exceeded",
+        }),
+      });
+    });
+    await page.goto("/");
+    await page
+      .getByRole("button", {
+        name: flow === "signup" ? "Create an account" : "Forgot password?",
+        exact: true,
+      })
+      .click();
+    const dialog = page.getByRole("dialog");
+    await dialog
+      .getByLabel("Email address", { exact: true })
+      .fill("limited@example.test");
+    if (flow === "signup") {
+      await dialog.getByLabel("Display name").fill("Keep my draft");
+      await dialog
+        .getByLabel("Create password", { exact: true })
+        .fill("Keep-this-passphrase-123");
+      await dialog
+        .getByLabel("Confirm password", { exact: true })
+        .fill("Keep-this-passphrase-123");
+    }
+    const submitName =
+      flow === "signup" ? "Create account" : "Request reset link";
+    await dialog.getByRole("button", { name: submitName, exact: true }).click();
+    await expect(dialog.getByRole("alert")).toContainText(
+      "Email sending is temporarily limited",
+    );
+    await expect(dialog.getByRole("alert")).toContainText(
+      "workspace administrator",
+    );
+    await expect(
+      dialog.getByRole("button", { name: /Try again in/ }),
+    ).toBeDisabled();
+    await expect(dialog.getByRole("status")).toHaveCount(0);
+    await expect(
+      dialog.getByLabel("Email address", { exact: true }),
+    ).toHaveValue("limited@example.test");
+    await expect(
+      dialog.getByLabel("Email address", { exact: true }),
+    ).toBeEditable();
+    if (flow === "signup") {
+      await expect(dialog.getByLabel("Display name")).toHaveValue(
+        "Keep my draft",
+      );
+      await expect(
+        dialog.getByLabel("Create password", { exact: true }),
+      ).toHaveValue("Keep-this-passphrase-123");
+    }
+    expect(calls).toBe(1);
+    await expect(
+      dialog.getByRole("button", { name: submitName, exact: true }),
+    ).toBeEnabled({ timeout: 6000 });
+    expect(calls).toBe(1);
+  });
+}
+
+test("an email cooldown survives switching from signup to password recovery", async ({
+  page,
+}) => {
+  let calls = 0;
+  await page.route("https://buildz-auth.example.test/**", async (route) => {
+    calls++;
+    await route.fulfill({
+      status: 429,
+      contentType: "application/json",
+      body: JSON.stringify({
+        error_code: "over_email_send_rate_limit",
+        msg: "email rate limit exceeded",
+      }),
+    });
+  });
+  await page.goto("/");
+  await page.getByRole("button", { name: "Create an account" }).click();
+  let dialog = page.getByRole("dialog");
+  await dialog.getByLabel("Display name").fill("Keep draft");
+  await dialog
+    .getByLabel("Email address", { exact: true })
+    .fill("limited@example.test");
+  await dialog
+    .getByLabel("Create password", { exact: true })
+    .fill("A long passphrase 123");
+  await dialog
+    .getByLabel("Confirm password", { exact: true })
+    .fill("A long passphrase 123");
+  await dialog
+    .getByRole("button", { name: "Create account", exact: true })
+    .click();
+  await expect(dialog.getByRole("alert")).toContainText("temporarily limited");
+  await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
+  await page.getByRole("button", { name: "Forgot password?" }).click();
+  dialog = page.getByRole("dialog");
+  await expect(
+    dialog.getByRole("button", { name: /Try again in/ }),
+  ).toBeDisabled();
+  expect(calls).toBe(1);
+});

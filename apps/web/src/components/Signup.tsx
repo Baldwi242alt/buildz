@@ -1,6 +1,7 @@
 import { useRef, useState, type FormEvent } from "react";
 import { auth } from "../lib/auth";
 import { Modal } from "./ui";
+import { emailRequestError, useEmailCooldown } from "../lib/authEmailFeedback";
 
 export function Signup({ onClose }: { onClose: () => void }) {
   const [name, setName] = useState("");
@@ -12,9 +13,10 @@ export function Signup({ onClose }: { onClose: () => void }) {
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
   const sending = useRef(false);
+  const wait = useEmailCooldown();
   async function submit(event: FormEvent) {
     event.preventDefault();
-    if (!auth || sending.current) return;
+    if (!auth || sending.current || wait > 0) return;
     setError("");
     if (!name.trim()) {
       setError("Enter your display name.");
@@ -39,7 +41,7 @@ export function Signup({ onClose }: { onClose: () => void }) {
           data: { display_name: name.trim() },
         },
       });
-      if (result.error) setError(result.error.message);
+      if (result.error) setError(emailRequestError(result.error));
       else {
         setPassword("");
         setConfirmation("");
@@ -143,7 +145,7 @@ export function Signup({ onClose }: { onClose: () => void }) {
                 onChange={(event) => setShow(event.target.checked)}
                 disabled={busy}
               />
-              Show passwords
+              <span>Show passwords</span>
             </label>
             {error && (
               <p className="error-message" role="alert">
@@ -159,8 +161,12 @@ export function Signup({ onClose }: { onClose: () => void }) {
               >
                 Cancel
               </button>
-              <button className="button primary" disabled={busy}>
-                {busy ? "Creating account…" : "Create account"}
+              <button className="button primary" disabled={busy || wait > 0}>
+                {busy
+                  ? "Creating account…"
+                  : wait
+                    ? `Try again in ${wait}s`
+                    : "Create account"}
               </button>
             </div>
           </form>

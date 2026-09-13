@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { auth } from "../lib/auth";
 import { Brand, Modal } from "./ui";
+import { emailRequestError, useEmailCooldown } from "../lib/authEmailFeedback";
 
 export function RecoveryRequest({
   initialEmail,
@@ -13,16 +14,17 @@ export function RecoveryRequest({
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
+  const wait = useEmailCooldown();
   async function submit(event: FormEvent) {
     event.preventDefault();
-    if (!auth || busy) return;
+    if (!auth || busy || wait > 0) return;
     setBusy(true);
     setError("");
     try {
       const result = await auth.resetPasswordForEmail(email.trim(), {
         redirectTo: location.origin,
       });
-      if (result.error) setError(result.error.message);
+      if (result.error) setError(emailRequestError(result.error));
       else setSent(true);
     } catch {
       setError(
@@ -75,8 +77,12 @@ export function RecoveryRequest({
             >
               Cancel
             </button>
-            <button className="button primary" disabled={busy}>
-              {busy ? "Requesting link…" : "Request reset link"}
+            <button className="button primary" disabled={busy || wait > 0}>
+              {busy
+                ? "Requesting link…"
+                : wait
+                  ? `Try again in ${wait}s`
+                  : "Request reset link"}
             </button>
           </div>
         </form>

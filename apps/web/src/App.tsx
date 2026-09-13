@@ -294,7 +294,7 @@ export function App() {
                         }
                         disabled={!auth}
                       />
-                      Show password
+                      <span>Show password</span>
                     </label>
                     <button
                       type="button"
