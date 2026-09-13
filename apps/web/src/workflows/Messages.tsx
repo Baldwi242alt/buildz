@@ -202,6 +202,10 @@ const notificationLabels: Record<string, string> = {
   "booking.changed": "A booking was updated",
   "consultation.booked": "A consultation was booked",
   "consultation.changed": "A consultation was updated",
+  "mentorship.requested": "A mentorship request arrived",
+  "mentorship.accepted": "A mentor accepted your project",
+  "mentorship.declined": "A mentorship request was declined",
+  "mentorship.cancelled": "A mentorship was cancelled",
   "message.created": "Your team has a new message",
   "publication.changed": "A project showcase was updated",
   "collaboration.requested": "A collaboration request arrived",
@@ -279,6 +283,13 @@ export function Notifications({ me }: { me: Schemas["Me"] }) {
                 <span className="workflow-caption">
                   Reference {item.subjectId}
                 </span>
+                {item.type.startsWith("mentorship.") && (
+                  <p>
+                    <a className="workflow-inline-link" href="#/consultations">
+                      View mentorship & consultations →
+                    </a>
+                  </p>
+                )}
               </div>
               {!item.readAt && (
                 <button

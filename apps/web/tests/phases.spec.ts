@@ -545,6 +545,34 @@ test("consultation receipt survives reload and cancellation frees the host slot"
   request,
 }) => {
   const staffToken = await token(request, 3);
+  const aliceToken = await token(request, 0);
+  const mentorshipResponse = await request.get(
+    `http://127.0.0.1:3001/v1/projects/${solar}/mentorships`,
+    { headers: { Authorization: `Bearer ${aliceToken}` } },
+  );
+  expect(mentorshipResponse.ok()).toBe(true);
+  let mentorship = (await mentorshipResponse.json()).data.find(
+    (item: { mentorId: string; state: string }) =>
+      item.mentorId === "66666666-6666-4666-8666-666666666666" &&
+      ["pending", "accepted"].includes(item.state),
+  );
+  if (!mentorship)
+    mentorship = await command(
+      request,
+      aliceToken,
+      `/projects/${solar}/mentorships`,
+      {
+        mentorId: "66666666-6666-4666-8666-666666666666",
+        message: "Fictional browser test mentorship for consultation booking.",
+      },
+    );
+  if (mentorship.state === "pending")
+    await command(
+      request,
+      staffToken,
+      `/mentorships/${mentorship.id}/decisions`,
+      { version: mentorship.version, decision: "accepted" },
+    );
   let start = "";
   let slot: { id: string; location: string } | undefined;
   // Persistent demo fixtures outlive each run. Find a genuinely free host time
@@ -604,9 +632,6 @@ test("consultation receipt survives reload and cancellation frees the host slot"
   await expect(saved).toContainText("Northstar Staff");
   await page.goto("/#/calendar");
   await page.getByLabel("Starting date").fill(localTime(start).slice(0, 10));
-  await page
-    .getByRole("combobox", { name: "View", exact: true })
-    .selectOption("1");
   await expect(
     page
       .locator(".agenda-list")

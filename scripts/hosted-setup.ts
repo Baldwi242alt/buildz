@@ -6,7 +6,7 @@ import pg from 'pg';
 
 // Operator-only helper. Never import this into a deployed application or print its configuration.
 const mode = process.argv[2] ?? 'check';
-if (!['check', 'migrate', 'provision', 'cron', 'cron-status', 'demo-bootstrap', 'demo-check', 'demo-content'].includes(mode)) throw new Error('Use check, migrate, provision, cron, cron-status, demo-bootstrap, demo-check or demo-content.');
+if (!['check', 'migrate', 'provision', 'cron', 'cron-status', 'demo-bootstrap', 'demo-check', 'demo-content', 'demo-tour-check'].includes(mode)) throw new Error('Use check, migrate, provision, cron, cron-status, demo-bootstrap, demo-check, demo-content or demo-tour-check.');
 let password = '';
 let connectionString = '';
 try {
@@ -34,7 +34,7 @@ try {
     if (result.rows[0]?.role !== 'postgres') throw new Error('Expected the migration owner role.');
     console.log('Verified TLS database connection:', JSON.stringify(result.rows[0]));
     if(mode==='demo-content') await (await import('./seed-hosted-demo.js')).seedHostedDemo(client);
-    if (mode === 'demo-bootstrap' || mode === 'demo-check') {
+    if (mode === 'demo-bootstrap' || mode === 'demo-check' || mode === 'demo-tour-check') {
       // Auth identity is created through the provider's supported admin flow,
       // never by inserting into its managed auth schema. This shared account
       // must not acquire access to a real campus or privileged application role.
@@ -77,6 +77,7 @@ try {
         const {data:me} = await response.json() as {data:{roles:unknown[];memberships:{affiliation:string;status:string}[];capabilities:{canCreateProject:boolean}}};
         if (me.roles.length || me.memberships.length !== 1 || me.memberships[0]?.affiliation !== 'student' || !me.capabilities.canCreateProject) throw new Error('Unexpected demo permissions.');
         console.log('Live password sign-in and /v1/me verified: student-only, one demo membership, canCreateProject=true. Tokens withheld.');
+        if(mode==='demo-tour-check')await (await import('./check-hosted-demo.js')).checkHostedDemo(session.access_token);
       }
     }
     if (mode === 'cron') {

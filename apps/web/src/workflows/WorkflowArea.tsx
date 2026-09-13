@@ -1,13 +1,14 @@
 import type { Schemas } from "../lib/api";
 import { Support, Progress } from "./Support";
 import { Planning, BookingList } from "./Booking";
-import { Discover, Showcase, Collaboration } from "./Discovery";
+import { Discover, Showcase, CollaborationHub } from "./Discovery";
 import { Messages, Notifications } from "./Messages";
 import { ResourceBrowser, Availability } from "./Resources";
 import { Credits } from "./Credits";
 import { Review } from "./Review";
 import { Consultations } from "./Consultations";
 import { Calendar } from "./Calendar";
+import { VenueCalendar } from "./VenueCalendar";
 import { api, unwrap } from "../lib/api";
 import { LoadState, useRemote } from "./common";
 
@@ -44,7 +45,14 @@ export function WorkflowArea({
         />
       );
     if (tab === "planning" && meta.features.bookings)
-      return <Planning project={project} me={me} members={members} />;
+      return (
+        <Planning
+          project={project}
+          me={me}
+          members={members}
+          initialSlot={route.split("/").slice(4)}
+        />
+      );
     if (tab === "messages" && meta.features.messages)
       return <Messages project={project} me={me} members={members} />;
     if (tab === "showcase" && meta.features.publicProjects)
@@ -61,7 +69,7 @@ export function WorkflowArea({
     if (route === "/availability" && meta.features.availability)
       return <Availability me={me} />;
     if (route === "/bookings" && meta.features.bookings)
-      return <AllBookings me={me} />;
+      return <AllBookings me={me} projects={projects} />;
     if (
       route === "/calendar" &&
       meta.features.bookings &&
@@ -82,7 +90,9 @@ export function WorkflowArea({
     )
       return <Discover me={me} projectId={route.split("/")[2]} />;
     if (route === "/collaboration" && meta.features.publicProjects)
-      return <Collaboration me={me} />;
+      return (
+        <CollaborationHub me={me} projects={projects} onChanged={onChanged} />
+      );
     if (route === "/notifications" && meta.features.notifications)
       return <Notifications me={me} />;
     if (route === "/credits" && meta.features.vouchers)
@@ -103,7 +113,13 @@ export function WorkflowArea({
     </div>
   );
 }
-function AllBookings({ me }: { me: Schemas["Me"] }) {
+function AllBookings({
+  me,
+  projects,
+}: {
+  me: Schemas["Me"];
+  projects: Schemas["Project"][];
+}) {
   const resources = useRemote(
     (signal) =>
       unwrap(
@@ -121,7 +137,12 @@ function AllBookings({ me }: { me: Schemas["Me"] }) {
         error={resources.error}
         retry={resources.reload}
       />
-      {resources.data && <BookingList me={me} resources={resources.data} />}
+      {resources.data && (
+        <>
+          <VenueCalendar resources={resources.data} projects={projects} />
+          <BookingList me={me} resources={resources.data} />
+        </>
+      )}
     </>
   );
 }

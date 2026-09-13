@@ -9,6 +9,8 @@ import {
   useRemote,
 } from "./common";
 import { usePolling } from "./usePolling";
+import { localDay, MonthPicker } from "./MonthPicker";
+import { TeamCalendar } from "./TeamCalendar";
 
 export function Calendar({
   me,
@@ -17,11 +19,8 @@ export function Calendar({
   me: Schemas["Me"];
   projects: Schemas["Project"][];
 }) {
-  const [from, setFrom] = useState(() => {
-    const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-  });
-  const [days, setDays] = useState("7");
+  const [from, setFrom] = useState(() => localDay());
+  const [projectId, setProjectId] = useState(projects[0]?.id || "");
   const data = useRemote(async (signal) => {
     const bookings: Schemas["Booking"][] = [];
     const consultations: Schemas["Consultation"][] = [];
@@ -49,7 +48,7 @@ export function Calendar({
   usePolling(data.reload, true, 60000);
   const start = new Date(`${from}T00:00:00`);
   const finish = new Date(start);
-  finish.setDate(finish.getDate() + Number(days));
+  finish.setDate(finish.getDate() + 1);
   const validRange = Number.isFinite(+start);
   const events = data.data
     ? [
@@ -90,8 +89,8 @@ export function Calendar({
         eyebrow="MAKE THE WEEK WORK"
         title="Your project calendar"
       >
-        A time-ordered agenda of permitted project reservations and
-        consultations. Pending resource requests remain clearly marked.
+        Choose a date to see who can meet, then review your saved reservations
+        and consultations. A team’s shared time is not a booking.
       </SectionHeading>
       <div className="workflow-toolbar">
         <label>
@@ -104,14 +103,17 @@ export function Calendar({
           />
         </label>
         <label>
-          View
+          Project team
           <select
-            value={days}
-            onChange={(event) => setDays(event.target.value)}
+            value={projectId}
+            onChange={(event) => setProjectId(event.target.value)}
           >
-            <option value="1">One day</option>
-            <option value="7">One week</option>
-            <option value="30">30 days</option>
+            {!projects.length && <option value="">No projects yet</option>}
+            {projects.map((project) => (
+              <option key={project.id} value={project.id}>
+                {project.title}
+              </option>
+            ))}
           </select>
         </label>
         <a className="button secondary" href="#/availability">
@@ -122,6 +124,21 @@ export function Calendar({
         Date filter uses your device’s local date. Event times are shown in{" "}
         {me.timezone}. Updates every minute while visible.
       </p>
+      <div className="team-calendar-layout">
+        <MonthPicker value={from || localDay()} onChange={setFrom} />
+        {projectId && validRange ? (
+          <TeamCalendar
+            key={`${projectId}:${from}`}
+            projectId={projectId}
+            day={from}
+          />
+        ) : !projectId ? (
+          <EmptyState title="Start with a project">
+            Create or join a project to compare your team’s shared availability.
+          </EmptyState>
+        ) : null}
+      </div>
+      <h3 className="section-subtitle">Saved events for the selected date</h3>
       <LoadState
         loading={data.loading && !data.data}
         error={data.error}

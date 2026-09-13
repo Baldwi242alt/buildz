@@ -30,14 +30,28 @@ import { manages } from "./Resources";
 import { useWorkflowAction } from "./useWorkflowAction";
 import { usePolling } from "./usePolling";
 
+function slotLocalTime(value?: string) {
+  if (!value) return "";
+  try {
+    const date = new Date(decodeURIComponent(value));
+    if (!Number.isFinite(+date)) return "";
+    const local = new Date(+date - date.getTimezoneOffset() * 60000);
+    return local.toISOString().slice(0, 16);
+  } catch {
+    return "";
+  }
+}
+
 export function Planning({
   project,
   me,
   members,
+  initialSlot = [],
 }: {
   project: Schemas["Project"];
   me: Schemas["Me"];
   members: Schemas["Member"][];
+  initialSlot?: string[];
 }) {
   const resources = useRemote(
     (signal) =>
@@ -49,12 +63,12 @@ export function Planning({
       ),
     project.id,
   );
-  const [resourceId, setResourceId] = useState("");
-  const [startsAt, setStart] = useState("");
-  const [endsAt, setEnd] = useState("");
+  const [resourceId, setResourceId] = useState(initialSlot[0] || "");
+  const [startsAt, setStart] = useState(() => slotLocalTime(initialSlot[1]));
+  const [endsAt, setEnd] = useState(() => slotLocalTime(initialSlot[2]));
   const [people, setPeople] = useState<string[]>([me.id]);
   const [voucher, setVoucher] = useState("");
-  const [duration, setDuration] = useState("60");
+  const [duration, setDuration] = useState(initialSlot.length >= 3 ? "30" : "60");
   const [quote, setQuote] = useState<{
     value: Schemas["BookingQuote"];
     input: Schemas["BookingInput"];

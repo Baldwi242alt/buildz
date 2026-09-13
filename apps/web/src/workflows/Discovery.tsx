@@ -12,6 +12,7 @@ import {
 import { useWorkflowAction } from "./useWorkflowAction";
 import { PageControls } from "./Support";
 import { Brand } from "../components/ui";
+import { RequestMentorship } from "./Mentorship";
 
 export function Discover({
   me,
@@ -203,6 +204,16 @@ export function Discover({
                   {projectId ? (
                     <>
                       <div className="record-actions">
+                        {me ? (
+                          <RequestMentorship projectId={item.id} />
+                        ) : (
+                          <button
+                            className="button secondary"
+                            onClick={onSignIn}
+                          >
+                            Request for mentorship
+                          </button>
+                        )}
                         {me ? (
                           (["join", "advice"] as const).map((kind) => (
                             <button
@@ -593,6 +604,53 @@ export function Showcase({
         </aside>
       </div>
       {action.dialog}
+    </>
+  );
+}
+
+export function CollaborationHub({
+  me,
+  projects,
+  onChanged,
+}: {
+  me: Schemas["Me"];
+  projects: Schemas["Project"][];
+  onChanged: () => void;
+}) {
+  const owned = projects.filter((project) => project.ownerId === me.id);
+  const [selected, setSelected] = useState(
+    owned.find((project) => project.publicationAudience === "public")?.id ||
+      owned[0]?.id ||
+      "",
+  );
+  return (
+    <>
+      {owned.length > 0 && (
+        <section aria-label="Incoming collaboration requests">
+          <div className="workflow-toolbar">
+            <label>
+              Requests received by project
+              <select
+                value={selected}
+                onChange={(event) => setSelected(event.target.value)}
+              >
+                {owned.map((project) => (
+                  <option key={project.id} value={project.id}>
+                    {project.title}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+          <Collaboration
+            key={selected}
+            me={me}
+            projectId={selected}
+            onChanged={onChanged}
+          />
+        </section>
+      )}
+      <Collaboration me={me} onChanged={onChanged} />
     </>
   );
 }

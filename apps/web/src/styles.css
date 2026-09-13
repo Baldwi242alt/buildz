@@ -16,6 +16,259 @@
   --radius-control: 8px;
   --motion-state: 160ms;
 }
+.team-calendar-layout,
+.venue-calendar-layout {
+  display: grid;
+  grid-template-columns: minmax(240px, 340px) minmax(0, 1fr);
+  align-items: start;
+  gap: 32px;
+  margin-block: 24px 40px;
+}
+.month-picker {
+  min-width: 0;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px;
+}
+.month-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+.month-heading h3 {
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 18px;
+  margin: 0;
+  text-align: center;
+}
+.month-heading .icon-button {
+  min-width: 36px;
+  min-height: 44px;
+}
+.month-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 2px;
+  margin-bottom: 16px;
+}
+.month-weekday {
+  text-align: center;
+  color: var(--muted);
+  font-size: 11px;
+  padding-block: 8px;
+}
+.month-day {
+  min-width: 0;
+  min-height: 44px;
+  padding: 4px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ink);
+  font-size: 13px;
+}
+.month-day:hover {
+  background: var(--paper);
+  border-color: var(--teal);
+}
+.month-day[aria-current="date"] {
+  text-decoration: underline;
+  text-underline-offset: 5px;
+  font-weight: 800;
+}
+.month-day[aria-pressed="true"] {
+  background: var(--teal);
+  color: white;
+  border-color: var(--teal);
+}
+.team-availability {
+  min-width: 0;
+}
+.team-availability h3,
+.venue-day h3 {
+  font-family: "Space Grotesk", sans-serif;
+  margin-top: 0;
+}
+.member-availability-list {
+  list-style: none;
+  padding: 0;
+  margin: 20px 0;
+}
+.member-availability-list > li {
+  padding-block: 16px;
+  border-bottom: 1px solid var(--line);
+}
+.member-availability-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.member-availability-summary strong {
+  overflow-wrap: anywhere;
+}
+.member-availability-list details {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.member-availability-list summary {
+  min-height: 32px;
+  padding-block: 8px;
+  cursor: pointer;
+}
+.member-availability-list details p {
+  line-height: 1.8;
+}
+.availability-state {
+  display: inline-block;
+  border: 1px solid currentColor;
+  border-radius: 5px;
+  padding: 5px 9px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.availability-free {
+  background: var(--mint);
+  color: #244a2e;
+}
+.availability-busy {
+  background: #f9dfce;
+  color: #733218;
+}
+.availability-not-shared,
+.availability-closed,
+.availability-past {
+  background: #eef1ef;
+  color: #53605a;
+}
+.venue-calendar {
+  padding-bottom: 24px;
+  margin-bottom: 32px;
+  border-bottom: 2px solid var(--line);
+}
+.venue-select {
+  display: grid;
+  gap: 8px;
+  max-width: 620px;
+  font-size: 13px;
+  font-weight: 700;
+}
+.venue-select select,
+.venue-day select {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--white);
+  color: var(--ink);
+}
+.venue-day {
+  min-width: 0;
+}
+.venue-slot-board {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-block: 20px;
+}
+.venue-time-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 12px;
+  border: 1px solid currentColor;
+  border-inline-start-width: 4px;
+  border-radius: 4px;
+  min-height: 68px;
+  min-width: 0;
+  text-align: start;
+}
+.venue-time-slot time {
+  font-weight: 800;
+  font-size: 13px;
+}
+.venue-time-slot span {
+  font-size: 11px;
+}
+.venue-time-slot:disabled {
+  opacity: 1;
+  cursor: default;
+}
+.venue-time-slot[aria-pressed="true"] {
+  outline: 3px solid var(--teal);
+  outline-offset: 2px;
+}
+.venue-day .workflow-receipt label {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.project-sharing-controls {
+  margin-block: 20px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.project-sharing-controls > p {
+  flex-basis: 100%;
+  margin: 0;
+}
+.visibility-options {
+  display: inline-flex;
+  gap: 6px;
+}
+.visibility-options [aria-pressed="true"] {
+  opacity: 1;
+  border: 2px solid var(--teal);
+  background: var(--mint);
+  color: var(--ink);
+}
+.mentorship-record .public-summary {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 850px) {
+  .team-calendar-layout,
+  .venue-calendar-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
+  }
+  .month-picker {
+    max-width: 420px;
+    width: 100%;
+  }
+}
+@media (max-width: 430px) {
+  .month-picker {
+    padding: 10px;
+  }
+  .month-heading h3 {
+    font-size: 16px;
+  }
+  .venue-slot-board {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (forced-colors: active) {
+  .month-day[aria-pressed="true"],
+  .venue-time-slot[aria-pressed="true"] {
+    outline: 2px solid Highlight;
+    outline-offset: -3px;
+  }
+  .availability-state,
+  .venue-time-slot {
+    border: 1px solid CanvasText;
+  }
+}
 .password-tools {
   display: flex;
   justify-content: space-between;

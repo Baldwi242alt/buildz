@@ -1,6 +1,6 @@
 # BuildZ frontend
 
-React, TypeScript, and Vite frontend integrated with the canonical BuildZ v0.2.1 API and generated SDK. Business data is authorized and persisted by the backend; failed requests never substitute samples or invented success.
+React, TypeScript, and Vite frontend integrated with the canonical BuildZ v0.3.0 API and generated SDK. Business data is authorized and persisted by the backend; failed requests never substitute samples or invented success.
 
 ## Start here
 
@@ -63,6 +63,19 @@ Signup sends only display_name profile metadata. No role, institution or permiss
 - Desktop navigation scrolls independently; mobile navigation is focus-contained and inert when closed. Layouts reflow without horizontal page scrolling. Keyboard, paste, visible focus, reduced motion and forced colors remain supported.
 
 ## Verification
+
+### Calendar and mentorship update (2026-09-13)
+
+- Calendar now has a keyboard-operable month grid, project selector and date-specific member availability. The selected 30-minute interval labels each member Free, Busy or Not shared; busy wins and unshared time is never inferred free. Calendar dates and availability windows use the explicitly displayed device timezone.
+- Bookings has a separate venue selector and time-slot board. Opening hours and anonymous occupied spans come from the resource calendar API. Closed overnight hours are collapsed by default and can be shown. A free slot opens Plan & book with its resource/start/end filled; this is not a hold or reservation.
+- Every accessible project overview has Request for mentorship. Accepted members can request a lead-school mentor whether the project is private or public. Mentors receive the title/message, not private notes/files/team. Request, acceptance and cancellation use persisted, versioned/idempotent API actions; consultations filter project options against the slot host's accepted mentorships. Nonmembers get membership guidance, not private data.
+- Owner Private/Public controls retain explicit curated publication review and confirmation. Incoming owner-project collaboration requests appear alongside outgoing requests. Mentorship notifications link to Consultations. Demo campuses are explicitly labelled; synthetic mentors do not impersonate live advisors or automatically accept new requests.
+- Verification: **7/7 new targeted tests**, **9/9 baseline UI tests**, and the updated **real consultation receipt/cancellation integration test** passed. The targeted suite includes a real persisted private-project mentorship request → staff acceptance → booking eligibility → cancellation journey; deterministic calendar, failure and nonmember edge cases explicitly intercept only those responses. Calendar reflow checked at 320/390/600/768/1024/1440px; venue at 320/390/768/1440px. Calendar/venue axe checks passed and mobile/desktop screenshots were inspected.
+- Production TypeScript/build pass: initial JS **148.36 KB gzip**, CSS **12.22 KB gzip**, unchanged fonts. Source-only static audit: no high/medium findings, 20 reviewed low signals (native form/arrow-key handling and existing cleaned-up timers). Generated Playwright report HTML is not app source. The existing raw-chunk-size advisory remains. This is bounded release regression evidence, not a fresh full-suite run, real-device audit or zero-bug guarantee.
+
+The frontend-design, ui-ux-pro and laws-of-ux skills informed the familiar month interaction, distinct venue slot board, visible unknown states, explicit privacy choices and mobile disclosure of closed hours. Existing BuildZ ink/teal, mint/peach and self-hosted Manrope/Space Grotesk are retained; no extra calendar or animation library is loaded.
+
+### Earlier baseline and running tests
 
 ```sh
 npm run typecheck --workspace @buildz/web

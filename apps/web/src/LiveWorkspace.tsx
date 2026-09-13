@@ -45,6 +45,7 @@ import { ActionDialog, type ActionSpec } from "./components/ActionDialog";
 import { type Project as ViewProject } from "./lib/model";
 import { useMobileNavigation } from "./components/useMobileNavigation";
 import { ProjectNavigation } from "./workflows/ProjectNavigation";
+import { RequestMentorship } from "./workflows/Mentorship";
 
 const WorkflowArea = lazy(() =>
   import("./workflows/WorkflowArea").then((module) => ({
@@ -830,6 +831,20 @@ export function LiveWorkspace({
           </div>
         </header>
         <main className="main-content" id="live-main" tabIndex={-1}>
+          {institutions.some(
+            (institution) =>
+              institution.isDemo &&
+              (schoolId === "all" || schoolId === institution.id),
+          ) && (
+            <p className="notice demo-campus-note">
+              <Info size={18} aria-hidden="true" />
+              <span>
+                <strong>Demo campus.</strong> Records marked Demo are fictional,
+                persisted examples. Demo mentors are not live advisors; new
+                requests need a real mentor to sign in and accept.
+              </span>
+            </p>
+          )}
           {notice && (
             <div className="notice live-notice" role="status">
               <Check size={18} />
@@ -1100,6 +1115,76 @@ export function LiveWorkspace({
                       </span>
                     </div>
                     <p className="detail-summary">{selected.summary}</p>
+                    <div className="project-sharing-controls">
+                      <RequestMentorship
+                        projectId={selected.id}
+                        disabled={
+                          selected.lifecycle === "archived" ||
+                          !members.some((member) => member.userId === me.id)
+                        }
+                      />
+                      {selected.ownerId === me.id &&
+                        meta.features.publicProjects && (
+                          <div
+                            role="group"
+                            aria-label="Project visibility"
+                            className="visibility-options"
+                          >
+                            <button
+                              className="button secondary"
+                              aria-pressed={
+                                selected.publicationAudience !== "public"
+                              }
+                              disabled={
+                                selected.publicationAudience !== "public"
+                              }
+                              onClick={() =>
+                                openAction({
+                                  title: "Make this project private?",
+                                  label: "Make private",
+                                  description:
+                                    "Take the public showcase offline. Your private workspace and accepted team stay unchanged.",
+                                  fields: [],
+                                  versioned: true,
+                                  run: async (_values, key) => {
+                                    await unwrap(
+                                      api!.POST("/v1/projects/{id}/unpublish", {
+                                        params: {
+                                          path: { id: selected.id },
+                                          header: { "Idempotency-Key": key },
+                                        },
+                                        body: { version: selected.version },
+                                      }),
+                                    );
+                                    after(
+                                      "Project is private. The public showcase is offline.",
+                                    );
+                                  },
+                                })
+                              }
+                            >
+                              Private
+                            </button>
+                            <button
+                              className="button secondary"
+                              aria-pressed={
+                                selected.publicationAudience === "public"
+                              }
+                              disabled={!selected.capabilities.canPublish}
+                              onClick={() =>
+                                navigate(`/projects/${selected.id}/showcase`)
+                              }
+                            >
+                              Public
+                            </button>
+                          </div>
+                        )}
+                      <p className="workflow-caption">
+                        Public opens showcase review. Only explicitly approved
+                        showcase fields become public; the workspace stays
+                        private.
+                      </p>
+                    </div>
                     <div className="detail-actions">
                       <button
                         className="button primary"
