@@ -26,7 +26,12 @@ async function authenticatedFetch(
   const request = new Request(input, init);
   const retry = request.clone();
   const response = await fetch(request, {
-    signal: AbortSignal.any([request.signal, AbortSignal.timeout(20000)]),
+    // Free hosted instances can take about a minute to wake. Reads remain
+    // cancellable; mutation timeouts stay short and reconcile by request key.
+    signal: AbortSignal.any([
+      request.signal,
+      AbortSignal.timeout(request.method === "GET" ? 75000 : 20000),
+    ]),
   });
   if (response.status === 429) {
     const guidance = response.headers.get("Retry-After");
@@ -60,7 +65,10 @@ async function authenticatedFetch(
   if (!data.session) return response;
   retry.headers.set("Authorization", `Bearer ${data.session.access_token}`);
   return fetch(retry, {
-    signal: AbortSignal.any([retry.signal, AbortSignal.timeout(20000)]),
+    signal: AbortSignal.any([
+      retry.signal,
+      AbortSignal.timeout(retry.method === "GET" ? 75000 : 20000),
+    ]),
   });
 }
 export const api = config.apiBaseUrl

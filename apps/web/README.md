@@ -77,10 +77,14 @@ The main suite tests persistence/permissions, invitations/public joins, proposal
 
 Auth tests use a separate temporary frontend on port 5174 and an **intercepted fictional provider**. They verify configured login typing, signup validation/payload/confirmation and recovery callback handling. They do not send email, create real accounts or substitute for hosted Supabase tests.
 
-Latest release-run result: final verification is in progress. The three isolated Auth tests and targeted outage/supervisor-race regressions pass; final counts will be recorded here before handoff.
+Latest release-run result (2026-09-13): **28/28 main browser tests passed**, including the delayed-first-response/cold-start scenario, plus **3/3 isolated Auth tests passed**. TypeScript checking and the production build pass. The main suite includes actual API/database integration; Auth-provider responses are intercepted as described above.
+
+Free-host readiness: cancellable GET requests allow up to 75 seconds for a sleeping service to wake, and initial loading explains the delay. Mutation timeouts remain 20 seconds with original-key reconciliation. Temporary refresh failures retain drafts; authentication/access denials still clear private data.
 
 Source static audit: no high/medium findings; low signals are reviewed native form/modal handling and cleaned-up timers. The spatial audit's block-three match is a false positive: no 3D engine/assets are present, and shared CSS implements reduced motion.
 
 Artifacts (git-ignored): playwright-report, test-results, auth-playwright-report, auth-test-results. Responsive widths: 320, 390, 600, 768, 900, 1024, 1366, 1440px. Budgets: initial JS <160 KB gzip, CSS <15 KB gzip, WOFF2 <110 KB, no continuous animation loop.
+
+Measured production build: 145.15 KB gzip initial JS, 11.35 KB gzip CSS, 95.97 KB WOFF2 fonts. Vite's non-blocking raw-chunk-size advisory remains; compressed budgets pass. Lighthouse 13.4.1 simulated-mobile lab on the production entry page: performance 98, accessibility 100, LCP 2.0 s, TBT 0 ms, CLS 0.004. This entry-page lab was run without hosted Auth configuration; it is not a signed-in workflow or field-performance claim.
 
 Automated checks are evidence, not a zero-bug guarantee or WCAG certification. Unverified locally: physical mobile devices, real screen-reader combinations, Firefox/WebKit, field INP, production email delivery and hosted end-to-end deployment.

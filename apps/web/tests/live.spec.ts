@@ -284,3 +284,22 @@ test("rate limiting respects Retry-After before retrying", async ({ page }) => {
     .click();
   await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
 });
+
+test("a slow first API response can wake beyond twenty seconds without losing sign-in", async ({
+  page,
+}) => {
+  await page.route("**/v1/me", async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 22000));
+    await route.continue();
+  });
+  await page.goto("/");
+  await page.getByRole("button", { name: "Connect to local demo" }).click();
+  await expect(
+    page.getByText("Loading your workspace…", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByText(/If the hosted service is waking up/),
+  ).toBeVisible();
+  await expect(page.locator(".sidebar .brand")).toBeVisible({ timeout: 35000 });
+  await expect(page.getByRole("alert")).toHaveCount(0);
+});

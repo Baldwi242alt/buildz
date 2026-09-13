@@ -481,10 +481,16 @@ export function LiveWorkspace({
       <main className="connection-screen">
         <Brand />
         {loading ? (
-          <div className="notice" role="status">
-            <LoaderCircle className="spin" size={20} />
-            Loading your workspace…
-          </div>
+          <>
+            <div className="notice" role="status">
+              <LoaderCircle className="spin" size={20} />
+              Loading your workspace…
+            </div>
+            <p className="connection-hint">
+              If the hosted service is waking up, this can take about a minute.
+              Your saved projects remain on the server.
+            </p>
+          </>
         ) : (
           <>
             <h1>We couldn’t open your workspace.</h1>

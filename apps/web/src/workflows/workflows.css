@@ -796,6 +796,13 @@
   }
 }
 @media (forced-colors: active) {
+  .workflow-tabs a {
+    border-bottom-color: Canvas;
+  }
+  .workflow-tabs a[aria-current="page"] {
+    outline: 2px solid Highlight;
+    outline-offset: -4px;
+  }
   .workflow-tabs a[aria-current="page"],
   .state-label > span {
     border-color: Highlight;

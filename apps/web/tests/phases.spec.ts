@@ -545,19 +545,43 @@ test("consultation receipt survives reload and cancellation frees the host slot"
   request,
 }) => {
   const staffToken = await token(request, 3);
-  const start = new Date(
-    Math.ceil(Date.now() / 3600000) * 3600000 +
-      7 * 86400000 +
-      Math.floor(Math.random() * 20) * 3600000,
-  ).toISOString();
-  const end = new Date(Date.parse(start) + 30 * 60000).toISOString();
-  const slot = await command(request, staffToken, "/consultation-slots", {
-    institutionId: "11111111-1111-4111-8111-111111111111",
-    startsAt: start,
-    endsAt: end,
-    location: `Test advisor office ${Date.now()}`,
-    crossSchool: true,
-  });
+  let start = "";
+  let slot: { id: string; location: string } | undefined;
+  // Persistent demo fixtures outlive each run. Find a genuinely free host time
+  // instead of randomly colliding with slots created by earlier tests.
+  for (let attempt = 0; attempt < 48; attempt++) {
+    start = new Date(
+      Math.ceil(Date.now() / 3600000) * 3600000 +
+        14 * 86400000 +
+        attempt * 3600000,
+    ).toISOString();
+    const response = await request.post(
+      "http://127.0.0.1:3001/v1/consultation-slots",
+      {
+        headers: {
+          Authorization: `Bearer ${staffToken}`,
+          "Idempotency-Key": crypto.randomUUID(),
+        },
+        data: {
+          institutionId: "11111111-1111-4111-8111-111111111111",
+          startsAt: start,
+          endsAt: new Date(Date.parse(start) + 30 * 60000).toISOString(),
+          location: `Test advisor office ${Date.now()}`,
+          crossSchool: true,
+        },
+      },
+    );
+    const result = await response.json();
+    if (response.status() === 409 && result.error?.code === "SLOT_UNAVAILABLE")
+      continue;
+    expect(response.ok(), JSON.stringify(result)).toBe(true);
+    slot = result.data;
+    break;
+  }
+  if (!slot)
+    throw new Error(
+      "No free fictional host slot remained in the test fixture range.",
+    );
   await login(page, 0, "/consultations");
   const card = page.locator(".slot-result").filter({ hasText: slot.location });
   await card.getByRole("button", { name: "Book session" }).click();
@@ -580,7 +604,9 @@ test("consultation receipt survives reload and cancellation frees the host slot"
   await expect(saved).toContainText("Northstar Staff");
   await page.goto("/#/calendar");
   await page.getByLabel("Starting date").fill(localTime(start).slice(0, 10));
-  await page.getByRole("combobox", { name: "View", exact: true }).selectOption("1");
+  await page
+    .getByRole("combobox", { name: "View", exact: true })
+    .selectOption("1");
   await expect(
     page
       .locator(".agenda-list")
