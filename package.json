@@ -1,0 +1,65 @@
+{
+  "name": "buildz",
+  "private": true,
+  "workspaces": [
+    "apps/web",
+    "packages/sdk"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace @buildz/web",
+    "build": "npm run build --workspace @buildz/web",
+    "typecheck": "npm run typecheck --workspace @buildz/web",
+    "test": "npm run test --workspace @buildz/web",
+    "preview": "npm run preview --workspace @buildz/web",
+    "dev:backend": "tsx scripts/dev.ts",
+    "smoke:backend": "tsx scripts/smoke.ts",
+    "start:api": "node dist/apps/api/src/main.js",
+    "start:worker": "node dist/apps/worker/src/main.js",
+    "build:backend": "tsc -p tsconfig.build.json",
+    "typecheck:backend": "tsc --noEmit",
+    "db:migrate": "tsx scripts/migrate.ts",
+    "db:seed:demo": "tsx scripts/seed.ts",
+    "db:bootstrap": "tsx scripts/bootstrap.ts",
+    "contracts:validate": "tsx scripts/contract.ts",
+    "sdk:generate": "openapi-typescript packages/contracts/openapi.yaml -o packages/sdk/src/schema.d.ts",
+    "sdk:check": "tsx scripts/check-sdk.ts",
+    "test:backend": "vitest run",
+    "test:integration": "vitest run tests/integration.test.ts",
+    "verify:backend": "npm run contracts:validate && npm run sdk:check && npm run typecheck:backend && npm run build:backend && npm run test:backend"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "type": "module",
+  "version": "0.1.0",
+  "dependencies": {
+    "@nestjs/common": "^11.1.0",
+    "@nestjs/core": "^11.1.0",
+    "@nestjs/platform-express": "^11.1.0",
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1",
+    "dotenv": "^17.2.0",
+    "helmet": "^8.1.0",
+    "jose": "^6.1.0",
+    "kysely": "^0.28.0",
+    "pg": "^8.16.0",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2",
+    "yaml": "^2.8.0",
+    "zod": "^4.1.0"
+  },
+  "devDependencies": {
+    "@apidevtools/swagger-parser": "^12.0.0",
+    "@types/express": "^5.0.0",
+    "@types/node": "^24.0.0",
+    "@types/pg": "^8.15.0",
+    "embedded-postgres": "^18.0.0-beta.15",
+    "openapi-typescript": "^7.10.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.0",
+    "vitest": "4.1.11"
+  },
+  "overrides": {
+    "@nestjs/platform-express": { "multer": "2.3.0" }
+  }
+}

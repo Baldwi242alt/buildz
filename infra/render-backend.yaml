@@ -1,0 +1,49 @@
+services:
+  - type: web
+    name: buildz-api
+    runtime: docker
+    dockerfilePath: ./infra/Dockerfile.api
+    dockerContext: .
+    region: singapore
+    plan: starter
+    autoDeployTrigger: off
+    healthCheckPath: /v1/health/ready
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_SSL
+        value: "true"
+      - key: DATABASE_URL
+        sync: false
+      - key: TRUST_PROXY_HOPS
+        sync: false
+      - key: AUTH_ISSUER
+        sync: false
+      - key: AUTH_JWKS_URL
+        sync: false
+      - key: AUTH_USERINFO_URL
+        sync: false
+      - key: AUTH_AUDIENCE
+        value: authenticated
+      - key: AUTH_PUBLISHABLE_KEY
+        sync: false
+      - key: APP_ORIGIN
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+  - type: worker
+    name: buildz-worker
+    runtime: docker
+    dockerfilePath: ./infra/Dockerfile.api
+    dockerContext: .
+    dockerCommand: node dist/apps/worker/src/main.js
+    region: singapore
+    plan: starter
+    autoDeployTrigger: off
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_SSL
+        value: "true"
+      - key: WORKER_DATABASE_URL
+        sync: false

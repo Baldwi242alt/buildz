@@ -1,0 +1,5854 @@
+openapi: 3.0.3
+info:
+  title: BuildZ API
+  version: 0.2.1
+  description: M0-M6 hackathon backend. Private authenticated workflows and explicit anonymous public projections. All
+    times are UTC ISO-8601. Monetary amounts are integer minor units. Notifications use authenticated polling; payments
+    are school-managed, not charged by BuildZ. Private file uploads are synchronous, at most 2 MiB per file/50 MiB per
+    project, with signature checks but no malware-scan guarantee.
+servers:
+  - url: http://localhost:3001
+    description: Local backend
+security:
+  - bearerAuth: []
+paths:
+  /v1/health/live:
+    get:
+      operationId: liveness
+      summary: liveness
+      parameters: []
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Status"
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422 invalid input,
+            429 rate limit.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      security: []
+  /v1/health/ready:
+    get:
+      operationId: readiness
+      summary: readiness
+      parameters: []
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Status"
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422 invalid input,
+            429 rate limit.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      security: []
+  /v1/meta:
+    get:
+      operationId: getMeta
+      summary: getMeta
+      parameters: []
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    $ref: "#/components/schemas/ServiceMeta"
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422 invalid input,
+            429 rate limit.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      security: []
+  /v1/me:
+    get:
+      operationId: getMe
+      summary: getMe
+      parameters: []
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Me"
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422 invalid input,
+            429 rate limit.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    patch:
+      operationId: updateMe
+      summary: updateMe
+      parameters: []
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Me"
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422 invalid input,
+            429 rate limit.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateMe"
+  /v1/institutions:
+    get:
+      operationId: listInstitutions
+      summary: listInstitutions
+      parameters: []
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Institution"
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422 invalid input,
+            429 rate limit.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/institutions/{id}:
+    get:
+      operationId: getInstitution
+      summary: getInstitution
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Institution"
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422 invalid input,
+            429 rate limit.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/institutions/{id}/verification-requests:
+    post:
+      operationId: requestVerification
+      summary: requestVerification
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: header
+          name: Idempotency-Key
+          required: true
+          schema:
+            type: string
+            pattern: ^[A-Za-z0-9_-]{8,128}$
+      responses:
+        "201":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    $ref: "#/components/schemas/VerificationResult"
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422 invalid input,
+            429 rate limit.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerificationInput"
+      x-idempotent: true
+    get:
+      operationId: listVerifications
+      summary: listVerifications
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Verification"
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422 invalid input,
+            429 rate limit.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/verification-requests/{id}/decisions:
+    post:
+      operationId: decideVerification
+      summary: decideVerification
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: header
+          name: Idempotency-Key
+          required: true
+          schema:
+            type: string
+            pattern: ^[A-Za-z0-9_-]{8,128}$
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    $ref: "#/components/schemas/VerificationResult"
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422 invalid input,
+            429 rate limit.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerificationDecision"
+      x-idempotent: true
+  /v1/projects:
+    get:
+      operationId: listProjects
+      summary: listProjects
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+          required: false
+        - in: query
+          name: cursor
+          schema:
+            type: string
+            maxLength: 512
+          required: false
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Project"
+                  meta:
+                    $ref: "#/components/schemas/PageMeta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422 invalid input,
+            429 rate limit.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-paginated: true
+    post:
+      operationId: createProject
+      summary: createProject
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: true
+          schema:
+            type: string
+            pattern: ^[A-Za-z0-9_-]{8,128}$
+      responses:
+        "201":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Project"
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422 invalid input,
+            429 rate limit.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateProject"
+      x-idempotent: true
+  /v1/projects/{id}:
+    get:
+      operationId: getProject
+      summary: getProject
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Project"
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422 invalid input,
+            429 rate limit.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    patch:
+      operationId: updateProject
+      summary: updateProject
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Project"
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422 invalid input,
+            429 rate limit.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProject"
+  /v1/projects/{id}/lifecycle:
+    post:
+      operationId: transitionProject
+      summary: transitionProject
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: header
+          name: Idempotency-Key
+          required: true
+          schema:
+            type: string
+            pattern: ^[A-Za-z0-9_-]{8,128}$
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Project"
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422 invalid input,
+            429 rate limit.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TransitionProject"
+      x-idempotent: true
+  /v1/projects/{id}/members:
+    get:
+      operationId: listMembers
+      summary: listMembers
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Member"
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422 invalid input,
+            429 rate limit.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/projects/{id}/members/{userId}:
+    delete:
+      operationId: removeMember
+      summary: removeMember
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: header
+          name: Idempotency-Key
+          required: true
+          schema:
+            type: string
+            pattern: ^[A-Za-z0-9_-]{8,128}$
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Removed"
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422 invalid input,
+            429 rate limit.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VersionCommand"
+      x-idempotent: true
+  /v1/projects/{id}/ownership-transfer:
+    post:
+      operationId: transferOwner
+      summary: transferOwner
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: header
+          name: Idempotency-Key
+          required: true
+          schema:
+            type: string
+            pattern: ^[A-Za-z0-9_-]{8,128}$
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Project"
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422 invalid input,
+            429 rate limit.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TransferOwner"
+      x-idempotent: true
+  /v1/projects/{id}/invitations:
+    post:
+      operationId: invite
+      summary: invite
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: header
+          name: Idempotency-Key
+          required: true
+          schema:
+            type: string
+            pattern: ^[A-Za-z0-9_-]{8,128}$
+      responses:
+        "201":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Invitation"
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422 invalid input,
+            429 rate limit.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateInvitation"
+      x-idempotent: true
+  /v1/me/invitations:
+    get:
+      operationId: listInvitations
+      summary: listInvitations
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+          required: false
+        - in: query
+          name: cursor
+          schema:
+            type: string
+            maxLength: 512
+          required: false
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Invitation"
+                  meta:
+                    $ref: "#/components/schemas/PageMeta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422 invalid input,
+            429 rate limit.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-paginated: true
+  /v1/invitations/{id}:
+    get:
+      operationId: getInvitation
+      summary: getInvitation
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Invitation"
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422 invalid input,
+            429 rate limit.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/invitations/{id}/accept:
+    post:
+      operationId: acceptInvitation
+      summary: acceptInvitation
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: header
+          name: Idempotency-Key
+          required: true
+          schema:
+            type: string
+            pattern: ^[A-Za-z0-9_-]{8,128}$
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    $ref: "#/components/schemas/AcceptedInvitation"
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422 invalid input,
+            429 rate limit.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-idempotent: true
+  /v1/invitations/{id}/decline:
+    post:
+      operationId: declineInvitation
+      summary: declineInvitation
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: header
+          name: Idempotency-Key
+          required: true
+          schema:
+            type: string
+            pattern: ^[A-Za-z0-9_-]{8,128}$
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Invitation"
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422 invalid input,
+            429 rate limit.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-idempotent: true
+  /v1/invitations/{id}/revoke:
+    post:
+      operationId: revokeInvitation
+      summary: revokeInvitation
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: header
+          name: Idempotency-Key
+          required: true
+          schema:
+            type: string
+            pattern: ^[A-Za-z0-9_-]{8,128}$
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Invitation"
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401 authentication, 403 forbidden, 404 private/missing, 409 conflict, 422 invalid input,
+            429 rate limit.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-idempotent: true
+  /v1/projects/{id}/proposals:
+    get:
+      operationId: listProposals
+      summary: listProposals
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 500
+            pattern: .*\S.*
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Proposal"
+                    maxItems: 101
+                  meta:
+                    $ref: "#/components/schemas/PageMeta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401, 403, 404, 409, 422 or 429.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-paginated: true
+    post:
+      operationId: submitProposal
+      summary: submitProposal
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            minLength: 8
+            maxLength: 128
+            pattern: ^[A-Za-z0-9_-]+$
+      responses:
+        "201":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Proposal"
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401, 403, 404, 409, 422 or 429.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubmitProposal"
+      x-idempotent: true
+  /v1/review/proposals:
+    get:
+      operationId: reviewQueue
+      summary: reviewQueue
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 500
+            pattern: .*\S.*
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Proposal"
+                    maxItems: 101
+                  meta:
+                    $ref: "#/components/schemas/PageMeta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401, 403, 404, 409, 422 or 429.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-paginated: true
+  /v1/proposals/{id}/decisions:
+    post:
+      operationId: decideProposal
+      summary: decideProposal
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            minLength: 8
+            maxLength: 128
+            pattern: ^[A-Za-z0-9_-]+$
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Proposal"
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401, 403, 404, 409, 422 or 429.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DecideProposal"
+      x-idempotent: true
+  /v1/projects/{id}/progress:
+    get:
+      operationId: listProgress
+      summary: listProgress
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 500
+            pattern: .*\S.*
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Progress"
+                    maxItems: 101
+                  meta:
+                    $ref: "#/components/schemas/PageMeta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401, 403, 404, 409, 422 or 429.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-paginated: true
+    post:
+      operationId: submitProgress
+      summary: submitProgress
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            minLength: 8
+            maxLength: 128
+            pattern: ^[A-Za-z0-9_-]+$
+      responses:
+        "201":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Progress"
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401, 403, 404, 409, 422 or 429.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubmitProgress"
+      x-idempotent: true
+  /v1/progress/{id}/reviews:
+    get:
+      operationId: listProgressReviews
+      summary: listProgressReviews
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ProgressReview"
+                    maxItems: 101
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401, 403, 404, 409, 422 or 429.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    post:
+      operationId: reviewProgress
+      summary: reviewProgress
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            minLength: 8
+            maxLength: 128
+            pattern: ^[A-Za-z0-9_-]+$
+      responses:
+        "201":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    $ref: "#/components/schemas/ProgressReview"
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401, 403, 404, 409, 422 or 429.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReviewProgress"
+      x-idempotent: true
+  /v1/resources:
+    get:
+      operationId: listResources
+      summary: listResources
+      parameters:
+        - name: institutionId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: category
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - room
+              - studio
+              - equipment
+              - workshop
+              - other
+        - name: latitude
+          in: query
+          required: false
+          schema:
+            type: number
+            minimum: -90
+            maximum: 90
+        - name: longitude
+          in: query
+          required: false
+          schema:
+            type: number
+            minimum: -180
+            maximum: 180
+        - name: sort
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - nearest
+              - cheapest
+              - newest
+        - name: currency
+          in: query
+          required: false
+          schema:
+            type: string
+            pattern: ^[A-Z]{3}$
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 500
+            pattern: .*\S.*
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Resource"
+                    maxItems: 101
+                  meta:
+                    $ref: "#/components/schemas/PageMeta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401, 403, 404, 409, 422 or 429.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-paginated: true
+    post:
+      operationId: createResource
+      summary: createResource
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            minLength: 8
+            maxLength: 128
+            pattern: ^[A-Za-z0-9_-]+$
+      responses:
+        "201":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Resource"
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401, 403, 404, 409, 422 or 429.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResourceInput"
+      x-idempotent: true
+  /v1/resources/{id}:
+    get:
+      operationId: getResource
+      summary: getResource
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Resource"
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401, 403, 404, 409, 422 or 429.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    patch:
+      operationId: updateResource
+      summary: updateResource
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Resource"
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401, 403, 404, 409, 422 or 429.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateResource"
+  /v1/resources/{id}/windows:
+    get:
+      operationId: listResourceWindows
+      summary: listResourceWindows
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: startsAt
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: endsAt
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: all
+          in: query
+          required: false
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ResourceWindow"
+                    maxItems: 101
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401, 403, 404, 409, 422 or 429.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    post:
+      operationId: setResourceWindows
+      summary: setResourceWindows
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            minLength: 8
+            maxLength: 128
+            pattern: ^[A-Za-z0-9_-]+$
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ResourceWindow"
+                    maxItems: 101
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401, 403, 404, 409, 422 or 429.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetWindows"
+      x-idempotent: true
+  /v1/me/availability:
+    get:
+      operationId: listAvailability
+      summary: listAvailability
+      parameters:
+        - name: startsAt
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: endsAt
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: all
+          in: query
+          required: false
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Availability"
+                    maxItems: 101
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401, 403, 404, 409, 422 or 429.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    post:
+      operationId: setAvailability
+      summary: setAvailability
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            minLength: 8
+            maxLength: 128
+            pattern: ^[A-Za-z0-9_-]+$
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Availability"
+                    maxItems: 101
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401, 403, 404, 409, 422 or 429.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetWindows"
+      x-idempotent: true
+  /v1/projects/{id}/build-slots/search:
+    post:
+      operationId: searchBuildSlots
+      summary: searchBuildSlots
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/BuildSlot"
+                    maxItems: 101
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401, 403, 404, 409, 422 or 429.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SlotSearch"
+  /v1/me/safety-credentials:
+    get:
+      operationId: listSafety
+      summary: listSafety
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 500
+            pattern: .*\S.*
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/SafetyCredential"
+                    maxItems: 101
+                  meta:
+                    $ref: "#/components/schemas/PageMeta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401, 403, 404, 409, 422 or 429.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-paginated: true
+  /v1/safety-credentials:
+    post:
+      operationId: grantSafety
+      summary: grantSafety
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            minLength: 8
+            maxLength: 128
+            pattern: ^[A-Za-z0-9_-]+$
+      responses:
+        "201":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    $ref: "#/components/schemas/SafetyCredential"
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401, 403, 404, 409, 422 or 429.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GrantSafety"
+      x-idempotent: true
+  /v1/safety-credentials/{id}/revoke:
+    post:
+      operationId: revokeSafety
+      summary: revokeSafety
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            minLength: 8
+            maxLength: 128
+            pattern: ^[A-Za-z0-9_-]+$
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    $ref: "#/components/schemas/SafetyCredential"
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401, 403, 404, 409, 422 or 429.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-idempotent: true
+  /v1/booking-quotes:
+    post:
+      operationId: quoteBooking
+      summary: quoteBooking
+      parameters: []
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    $ref: "#/components/schemas/BookingQuote"
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401, 403, 404, 409, 422 or 429.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BookingInput"
+  /v1/bookings:
+    post:
+      operationId: createBooking
+      summary: createBooking
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            minLength: 8
+            maxLength: 128
+            pattern: ^[A-Za-z0-9_-]+$
+      responses:
+        "201":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Booking"
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401, 403, 404, 409, 422 or 429.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateBooking"
+      x-idempotent: true
+    get:
+      operationId: listBookings
+      summary: listBookings
+      parameters:
+        - name: projectId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: resourceId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 500
+            pattern: .*\S.*
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Booking"
+                    maxItems: 101
+                  meta:
+                    $ref: "#/components/schemas/PageMeta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401, 403, 404, 409, 422 or 429.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-paginated: true
+  /v1/bookings/{id}:
+    get:
+      operationId: getBooking
+      summary: getBooking
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Booking"
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401, 403, 404, 409, 422 or 429.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/bookings/{id}/decisions:
+    post:
+      operationId: decideBooking
+      summary: decideBooking
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            minLength: 8
+            maxLength: 128
+            pattern: ^[A-Za-z0-9_-]+$
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Booking"
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401, 403, 404, 409, 422 or 429.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BookingDecision"
+      x-idempotent: true
+  /v1/consultation-slots:
+    get:
+      operationId: listConsultationSlots
+      summary: listConsultationSlots
+      parameters:
+        - name: institutionId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 500
+            pattern: .*\S.*
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ConsultationSlot"
+                    maxItems: 101
+                  meta:
+                    $ref: "#/components/schemas/PageMeta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401, 403, 404, 409, 422 or 429.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-paginated: true
+    post:
+      operationId: createConsultationSlot
+      summary: createConsultationSlot
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            minLength: 8
+            maxLength: 128
+            pattern: ^[A-Za-z0-9_-]+$
+      responses:
+        "201":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    $ref: "#/components/schemas/ConsultationSlot"
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401, 403, 404, 409, 422 or 429.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateConsultationSlot"
+      x-idempotent: true
+  /v1/consultation-slots/{id}/close:
+    post:
+      operationId: closeConsultationSlot
+      summary: closeConsultationSlot
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            minLength: 8
+            maxLength: 128
+            pattern: ^[A-Za-z0-9_-]+$
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    $ref: "#/components/schemas/ConsultationSlot"
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401, 403, 404, 409, 422 or 429.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-idempotent: true
+  /v1/consultations:
+    get:
+      operationId: listConsultations
+      summary: listConsultations
+      parameters:
+        - name: projectId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 500
+            pattern: .*\S.*
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Consultation"
+                    maxItems: 101
+                  meta:
+                    $ref: "#/components/schemas/PageMeta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401, 403, 404, 409, 422 or 429.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-paginated: true
+    post:
+      operationId: bookConsultation
+      summary: bookConsultation
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            minLength: 8
+            maxLength: 128
+            pattern: ^[A-Za-z0-9_-]+$
+      responses:
+        "201":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Consultation"
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401, 403, 404, 409, 422 or 429.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BookConsultation"
+      x-idempotent: true
+  /v1/consultations/{id}/decisions:
+    post:
+      operationId: decideConsultation
+      summary: decideConsultation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            minLength: 8
+            maxLength: 128
+            pattern: ^[A-Za-z0-9_-]+$
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Consultation"
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401, 403, 404, 409, 422 or 429.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConsultationDecision"
+      x-idempotent: true
+  /v1/projects/{id}/messages:
+    get:
+      operationId: listMessages
+      summary: listMessages
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 500
+            pattern: .*\S.*
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Message"
+                    maxItems: 101
+                  meta:
+                    $ref: "#/components/schemas/PageMeta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401, 403, 404, 409, 422 or 429.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-paginated: true
+    post:
+      operationId: sendMessage
+      summary: sendMessage
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            minLength: 8
+            maxLength: 128
+            pattern: ^[A-Za-z0-9_-]+$
+      responses:
+        "201":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Message"
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401, 403, 404, 409, 422 or 429.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendMessage"
+      x-idempotent: true
+  /v1/me/notifications:
+    get:
+      operationId: listNotifications
+      summary: listNotifications
+      parameters:
+        - name: unread
+          in: query
+          required: false
+          schema:
+            type: boolean
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 500
+            pattern: .*\S.*
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Notification"
+                    maxItems: 101
+                  meta:
+                    $ref: "#/components/schemas/PageMeta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401, 403, 404, 409, 422 or 429.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-paginated: true
+  /v1/notifications/{id}/read:
+    post:
+      operationId: readNotification
+      summary: readNotification
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            minLength: 8
+            maxLength: 128
+            pattern: ^[A-Za-z0-9_-]+$
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Notification"
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401, 403, 404, 409, 422 or 429.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-idempotent: true
+  /v1/public/projects:
+    get:
+      operationId: discoverProjects
+      summary: discoverProjects
+      parameters:
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 100
+            pattern: .*\S.*
+        - name: tag
+          in: query
+          required: false
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 40
+            pattern: .*\S.*
+        - name: projectType
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - business
+              - engineering
+              - creative
+              - community
+              - other
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 500
+            pattern: .*\S.*
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/PublicProject"
+                    maxItems: 101
+                  meta:
+                    $ref: "#/components/schemas/PageMeta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401, 403, 404, 409, 422 or 429.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-paginated: true
+      security: []
+  /v1/public/projects/{id}:
+    get:
+      operationId: getPublicProject
+      summary: getPublicProject
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    $ref: "#/components/schemas/PublicProject"
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401, 403, 404, 409, 422 or 429.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      security: []
+  /v1/projects/{id}/publication:
+    post:
+      operationId: publishProject
+      summary: publishProject
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            minLength: 8
+            maxLength: 128
+            pattern: ^[A-Za-z0-9_-]+$
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    $ref: "#/components/schemas/PublicProject"
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401, 403, 404, 409, 422 or 429.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PublishProject"
+      x-idempotent: true
+  /v1/projects/{id}/unpublish:
+    post:
+      operationId: unpublishProject
+      summary: unpublishProject
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            minLength: 8
+            maxLength: 128
+            pattern: ^[A-Za-z0-9_-]+$
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    $ref: "#/components/schemas/PublicProject"
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401, 403, 404, 409, 422 or 429.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VersionCommand"
+      x-idempotent: true
+  /v1/public/projects/{id}/collaboration-requests:
+    post:
+      operationId: requestCollaboration
+      summary: requestCollaboration
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            minLength: 8
+            maxLength: 128
+            pattern: ^[A-Za-z0-9_-]+$
+      responses:
+        "201":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    $ref: "#/components/schemas/CollaborationRequest"
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401, 403, 404, 409, 422 or 429.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RequestCollaboration"
+      x-idempotent: true
+  /v1/projects/{id}/collaboration-requests:
+    get:
+      operationId: listProjectRequests
+      summary: listProjectRequests
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 500
+            pattern: .*\S.*
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/CollaborationRequest"
+                    maxItems: 101
+                  meta:
+                    $ref: "#/components/schemas/PageMeta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401, 403, 404, 409, 422 or 429.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-paginated: true
+  /v1/me/collaboration-requests:
+    get:
+      operationId: listMyRequests
+      summary: listMyRequests
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 500
+            pattern: .*\S.*
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/CollaborationRequest"
+                    maxItems: 101
+                  meta:
+                    $ref: "#/components/schemas/PageMeta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401, 403, 404, 409, 422 or 429.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-paginated: true
+  /v1/collaboration-requests/{id}/decisions:
+    post:
+      operationId: decideCollaboration
+      summary: decideCollaboration
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            minLength: 8
+            maxLength: 128
+            pattern: ^[A-Za-z0-9_-]+$
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    $ref: "#/components/schemas/CollaborationRequest"
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401, 403, 404, 409, 422 or 429.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DecideCollaboration"
+      x-idempotent: true
+  /v1/public/projects/{id}/reports:
+    post:
+      operationId: reportContent
+      summary: reportContent
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            minLength: 8
+            maxLength: 128
+            pattern: ^[A-Za-z0-9_-]+$
+      responses:
+        "201":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    $ref: "#/components/schemas/ContentReport"
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401, 403, 404, 409, 422 or 429.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReportContent"
+      x-idempotent: true
+  /v1/review/reports:
+    get:
+      operationId: listReports
+      summary: listReports
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 500
+            pattern: .*\S.*
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ContentReport"
+                    maxItems: 101
+                  meta:
+                    $ref: "#/components/schemas/PageMeta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401, 403, 404, 409, 422 or 429.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-paginated: true
+  /v1/reports/{id}/decisions:
+    post:
+      operationId: moderateReport
+      summary: moderateReport
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            minLength: 8
+            maxLength: 128
+            pattern: ^[A-Za-z0-9_-]+$
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    $ref: "#/components/schemas/ContentReport"
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401, 403, 404, 409, 422 or 429.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ModerateReport"
+      x-idempotent: true
+  /v1/vouchers:
+    get:
+      operationId: listVouchers
+      summary: listVouchers
+      parameters:
+        - name: institutionId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 500
+            pattern: .*\S.*
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Voucher"
+                    maxItems: 101
+                  meta:
+                    $ref: "#/components/schemas/PageMeta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401, 403, 404, 409, 422 or 429.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-paginated: true
+    post:
+      operationId: createVoucher
+      summary: createVoucher
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            minLength: 8
+            maxLength: 128
+            pattern: ^[A-Za-z0-9_-]+$
+      responses:
+        "201":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Voucher"
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401, 403, 404, 409, 422 or 429.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateVoucher"
+      x-idempotent: true
+  /v1/vouchers/{id}/deactivate:
+    post:
+      operationId: deactivateVoucher
+      summary: deactivateVoucher
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            minLength: 8
+            maxLength: 128
+            pattern: ^[A-Za-z0-9_-]+$
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Voucher"
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401, 403, 404, 409, 422 or 429.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-idempotent: true
+  /v1/vouchers/{id}/ledger:
+    get:
+      operationId: voucherLedger
+      summary: voucherLedger
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 500
+            pattern: .*\S.*
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/CreditEntry"
+                    maxItems: 101
+                  meta:
+                    $ref: "#/components/schemas/PageMeta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401, 403, 404, 409, 422 or 429.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-paginated: true
+  /v1/review/projects:
+    get:
+      operationId: reviewProjects
+      summary: reviewProjects
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 500
+            pattern: .*\S.*
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Project"
+                    maxItems: 101
+                  meta:
+                    $ref: "#/components/schemas/PageMeta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401, 403, 404, 409, 422 or 429.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-paginated: true
+  /v1/institutions/{id}/staff:
+    get:
+      operationId: listStaff
+      summary: listStaff
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/StaffMember"
+                    maxItems: 101
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401, 403, 404, 409, 422 or 429.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /v1/projects/{id}/files:
+    get:
+      operationId: listFiles
+      summary: listFiles
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 500
+            pattern: .*\S.*
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ProjectFile"
+                    maxItems: 101
+                  meta:
+                    $ref: "#/components/schemas/PageMeta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401, 403, 404, 409, 422 or 429.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-paginated: true
+    post:
+      operationId: uploadFile
+      summary: uploadFile
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+            minLength: 8
+            maxLength: 128
+            pattern: ^[A-Za-z0-9_-]+$
+      responses:
+        "201":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    $ref: "#/components/schemas/ProjectFile"
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401, 403, 404, 409, 422 or 429.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UploadFile"
+      x-idempotent: true
+  /v1/files/{id}/content:
+    get:
+      operationId: downloadFile
+      summary: downloadFile
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  data:
+                    $ref: "#/components/schemas/FileContent"
+                  meta:
+                    $ref: "#/components/schemas/Meta"
+                required:
+                  - data
+                  - meta
+        default:
+          description: Structured error; 401, 403, 404, 409, 422 or 429.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Error:
+      type: object
+      additionalProperties: false
+      properties:
+        error:
+          type: object
+          additionalProperties: false
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            retryable:
+              type: boolean
+            requestId:
+              type: string
+          required:
+            - code
+            - message
+            - retryable
+            - requestId
+      required:
+        - error
+    Meta:
+      type: object
+      additionalProperties: false
+      properties:
+        requestId:
+          type: string
+      required:
+        - requestId
+    PageMeta:
+      type: object
+      additionalProperties: false
+      properties:
+        requestId:
+          type: string
+        nextCursor:
+          type: string
+          nullable: true
+      required:
+        - requestId
+        - nextCursor
+    Status:
+      type: object
+      additionalProperties: false
+      properties:
+        status:
+          type: string
+          enum:
+            - ok
+      required:
+        - status
+    ServiceMeta:
+      type: object
+      additionalProperties: false
+      properties:
+        apiVersion:
+          type: string
+        milestones:
+          type: array
+          items:
+            type: string
+        features:
+          type: object
+          additionalProperties: false
+          properties:
+            projects:
+              type: boolean
+            invitations:
+              type: boolean
+            publicProjects:
+              type: boolean
+            bookings:
+              type: boolean
+            liveEvents:
+              type: boolean
+            proposals:
+              type: boolean
+            progress:
+              type: boolean
+            resources:
+              type: boolean
+            availability:
+              type: boolean
+            consultations:
+              type: boolean
+            messages:
+              type: boolean
+            notifications:
+              type: boolean
+            vouchers:
+              type: boolean
+            files:
+              type: boolean
+          required:
+            - projects
+            - invitations
+            - publicProjects
+            - bookings
+            - liveEvents
+        auth:
+          type: object
+          additionalProperties: false
+          properties:
+            issuer:
+              type: string
+            audience:
+              type: string
+          required:
+            - issuer
+            - audience
+      required:
+        - apiVersion
+        - milestones
+        - features
+        - auth
+    Institution:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        slug:
+          type: string
+        timezone:
+          type: string
+        currency:
+          type: string
+        isDemo:
+          type: boolean
+      required:
+        - id
+        - name
+        - slug
+        - timezone
+        - currency
+        - isDemo
+    Membership:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        institutionId:
+          type: string
+          format: uuid
+        affiliation:
+          type: string
+          enum:
+            - student
+            - staff
+        status:
+          type: string
+          enum:
+            - verified
+            - revoked
+        validUntil:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+        - id
+        - institutionId
+        - affiliation
+        - status
+        - validUntil
+    Role:
+      type: object
+      additionalProperties: false
+      properties:
+        institutionId:
+          type: string
+          format: uuid
+        role:
+          type: string
+          enum:
+            - institution_admin
+            - reviewer
+            - resource_manager
+      required:
+        - institutionId
+        - role
+    Me:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        displayName:
+          type: string
+        timezone:
+          type: string
+        memberships:
+          type: array
+          items:
+            $ref: "#/components/schemas/Membership"
+        roles:
+          type: array
+          items:
+            $ref: "#/components/schemas/Role"
+        capabilities:
+          type: object
+          additionalProperties: false
+          properties:
+            canCreateProject:
+              type: boolean
+          required:
+            - canCreateProject
+      required:
+        - id
+        - email
+        - displayName
+        - timezone
+        - memberships
+        - roles
+        - capabilities
+    UpdateMe:
+      type: object
+      additionalProperties: false
+      properties:
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          pattern: .*\S.*
+        timezone:
+          type: string
+          format: iana-timezone
+      minProperties: 1
+    ProjectCapabilities:
+      type: object
+      additionalProperties: false
+      properties:
+        canEdit:
+          type: boolean
+        canInvite:
+          type: boolean
+        canManageMembers:
+          type: boolean
+        canArchive:
+          type: boolean
+        canTransferOwnership:
+          type: boolean
+        canPublish:
+          type: boolean
+        canSubmitProposal:
+          type: boolean
+        canReviewProgress:
+          type: boolean
+        canMessage:
+          type: boolean
+      required:
+        - canEdit
+        - canInvite
+        - canManageMembers
+        - canArchive
+        - canTransferOwnership
+        - canPublish
+        - canSubmitProposal
+    Project:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        leadInstitutionId:
+          type: string
+          format: uuid
+        ownerId:
+          type: string
+          format: uuid
+        title:
+          type: string
+        summary:
+          type: string
+        projectType:
+          type: string
+          enum:
+            - business
+            - engineering
+            - creative
+            - community
+            - other
+        lifecycle:
+          type: string
+          enum:
+            - idea
+            - active
+            - completed
+            - archived
+        publicationAudience:
+          type: string
+          enum:
+            - private
+            - public
+        version:
+          type: integer
+          minimum: 1
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        capabilities:
+          $ref: "#/components/schemas/ProjectCapabilities"
+      required:
+        - id
+        - leadInstitutionId
+        - ownerId
+        - title
+        - summary
+        - projectType
+        - lifecycle
+        - publicationAudience
+        - version
+        - createdAt
+        - updatedAt
+        - capabilities
+    CreateProject:
+      type: object
+      additionalProperties: false
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 150
+          pattern: .*\S.*
+        summary:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          pattern: .*\S.*
+        projectType:
+          type: string
+          enum:
+            - business
+            - engineering
+            - creative
+            - community
+            - other
+        leadInstitutionId:
+          type: string
+          format: uuid
+      required:
+        - title
+        - summary
+        - projectType
+        - leadInstitutionId
+    UpdateProject:
+      type: object
+      additionalProperties: false
+      properties:
+        version:
+          type: integer
+          minimum: 1
+        title:
+          type: string
+          minLength: 1
+          maxLength: 150
+          pattern: .*\S.*
+        summary:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          pattern: .*\S.*
+      required:
+        - version
+      minProperties: 2
+    TransitionProject:
+      type: object
+      additionalProperties: false
+      properties:
+        version:
+          type: integer
+          minimum: 1
+        lifecycle:
+          type: string
+          enum:
+            - idea
+            - active
+            - completed
+            - archived
+      required:
+        - version
+        - lifecycle
+    TransferOwner:
+      type: object
+      additionalProperties: false
+      properties:
+        version:
+          type: integer
+          minimum: 1
+        newOwnerId:
+          type: string
+          format: uuid
+      required:
+        - version
+        - newOwnerId
+    Member:
+      type: object
+      additionalProperties: false
+      properties:
+        userId:
+          type: string
+          format: uuid
+        displayName:
+          type: string
+        role:
+          type: string
+          enum:
+            - owner
+            - editor
+            - member
+        joinedAt:
+          type: string
+          format: date-time
+      required:
+        - userId
+        - displayName
+        - role
+        - joinedAt
+    VersionCommand:
+      type: object
+      additionalProperties: false
+      properties:
+        version:
+          type: integer
+          minimum: 1
+      required:
+        - version
+    Removed:
+      type: object
+      additionalProperties: false
+      properties:
+        removed:
+          type: boolean
+      required:
+        - removed
+    CreateInvitation:
+      type: object
+      additionalProperties: false
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        role:
+          type: string
+          enum:
+            - editor
+            - member
+      required:
+        - email
+        - role
+    Invitation:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        projectId:
+          type: string
+          format: uuid
+        recipientEmail:
+          type: string
+          format: email
+        role:
+          type: string
+          enum:
+            - editor
+            - member
+        state:
+          type: string
+          enum:
+            - pending
+            - accepted
+            - declined
+            - revoked
+            - expired
+        expiresAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        invitationUrl:
+          type: string
+          format: uri
+      required:
+        - id
+        - projectId
+        - recipientEmail
+        - role
+        - state
+        - expiresAt
+        - createdAt
+        - invitationUrl
+    AcceptedInvitation:
+      type: object
+      additionalProperties: false
+      properties:
+        projectId:
+          type: string
+          format: uuid
+        state:
+          type: string
+          enum:
+            - accepted
+      required:
+        - projectId
+        - state
+    VerificationInput:
+      type: object
+      additionalProperties: false
+      properties:
+        statement:
+          type: string
+          minLength: 1
+          maxLength: 1000
+          pattern: .*\S.*
+      required:
+        - statement
+    VerificationDecision:
+      type: object
+      additionalProperties: false
+      properties:
+        version:
+          type: integer
+          minimum: 1
+        decision:
+          type: string
+          enum:
+            - approved
+            - rejected
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 1000
+          pattern: .*\S.*
+      required:
+        - version
+        - decision
+        - reason
+    VerificationResult:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        state:
+          type: string
+          enum:
+            - pending
+            - approved
+            - rejected
+        version:
+          type: integer
+          minimum: 1
+      required:
+        - id
+        - state
+        - version
+    Verification:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        institutionId:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        statement:
+          type: string
+        state:
+          type: string
+          enum:
+            - pending
+            - approved
+            - rejected
+        reason:
+          type: string
+          nullable: true
+        version:
+          type: integer
+          minimum: 1
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - institutionId
+        - userId
+        - statement
+        - state
+        - reason
+        - version
+        - createdAt
+    Proposal:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        projectId:
+          type: string
+          format: uuid
+        authorId:
+          type: string
+          format: uuid
+        objectives:
+          type: string
+          minLength: 1
+          maxLength: 5000
+          pattern: .*\S.*
+        supportRequested:
+          type: string
+          minLength: 1
+          maxLength: 3000
+          pattern: .*\S.*
+        minutesRequested:
+          type: integer
+          minimum: 0
+          maximum: 100000
+        state:
+          type: string
+          enum:
+            - submitted
+            - approved
+            - changes_requested
+            - rejected
+        decisionReason:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          pattern: .*\S.*
+          nullable: true
+        decidedBy:
+          type: string
+          format: uuid
+          nullable: true
+        supervisorId:
+          type: string
+          format: uuid
+          nullable: true
+        minutesGranted:
+          type: integer
+          minimum: 0
+          maximum: 100000
+        version:
+          type: integer
+          minimum: 1
+          maximum: 10000000
+      required:
+        - id
+        - createdAt
+        - projectId
+        - authorId
+        - objectives
+        - supportRequested
+        - minutesRequested
+        - state
+        - decisionReason
+        - decidedBy
+        - supervisorId
+        - minutesGranted
+        - version
+    SubmitProposal:
+      type: object
+      additionalProperties: false
+      properties:
+        objectives:
+          type: string
+          minLength: 1
+          maxLength: 5000
+          pattern: .*\S.*
+        supportRequested:
+          type: string
+          minLength: 1
+          maxLength: 3000
+          pattern: .*\S.*
+        minutesRequested:
+          type: integer
+          minimum: 0
+          maximum: 100000
+      required:
+        - objectives
+        - supportRequested
+        - minutesRequested
+    DecideProposal:
+      type: object
+      additionalProperties: false
+      properties:
+        version:
+          type: integer
+          minimum: 1
+          maximum: 10000000
+        decision:
+          type: string
+          enum:
+            - approved
+            - changes_requested
+            - rejected
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          pattern: .*\S.*
+        supervisorId:
+          type: string
+          format: uuid
+        minutesGranted:
+          type: integer
+          minimum: 0
+          maximum: 100000
+      required:
+        - version
+        - decision
+        - reason
+    Evidence:
+      type: object
+      additionalProperties: false
+      properties:
+        url:
+          type: string
+          format: uri
+          pattern: ^https://
+          maxLength: 2048
+        fileId:
+          type: string
+          format: uuid
+        label:
+          type: string
+          minLength: 1
+          maxLength: 150
+          pattern: .*\S.*
+        kind:
+          type: string
+          enum:
+            - photo
+            - document
+            - video
+            - link
+      required:
+        - label
+        - kind
+      oneOf:
+        - required:
+            - url
+        - required:
+            - fileId
+    Progress:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        projectId:
+          type: string
+          format: uuid
+        authorId:
+          type: string
+          format: uuid
+        summary:
+          type: string
+          minLength: 1
+          maxLength: 5000
+          pattern: .*\S.*
+        minutesSpent:
+          type: integer
+          minimum: 0
+          maximum: 100000
+        evidence:
+          type: array
+          items:
+            $ref: "#/components/schemas/Evidence"
+          maxItems: 10
+      required:
+        - id
+        - createdAt
+        - projectId
+        - authorId
+        - summary
+        - minutesSpent
+        - evidence
+    SubmitProgress:
+      type: object
+      additionalProperties: false
+      properties:
+        summary:
+          type: string
+          minLength: 1
+          maxLength: 5000
+          pattern: .*\S.*
+        minutesSpent:
+          type: integer
+          minimum: 0
+          maximum: 100000
+        evidence:
+          type: array
+          items:
+            $ref: "#/components/schemas/Evidence"
+          maxItems: 10
+      required:
+        - summary
+        - minutesSpent
+    ProgressReview:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        progressId:
+          type: string
+          format: uuid
+        projectId:
+          type: string
+          format: uuid
+        reviewerId:
+          type: string
+          format: uuid
+        feedback:
+          type: string
+          minLength: 1
+          maxLength: 3000
+          pattern: .*\S.*
+        outcome:
+          type: string
+          enum:
+            - acknowledged
+            - needs_attention
+      required:
+        - id
+        - createdAt
+        - progressId
+        - projectId
+        - reviewerId
+        - feedback
+        - outcome
+    ReviewProgress:
+      type: object
+      additionalProperties: false
+      properties:
+        feedback:
+          type: string
+          minLength: 1
+          maxLength: 3000
+          pattern: .*\S.*
+        outcome:
+          type: string
+          enum:
+            - acknowledged
+            - needs_attention
+      required:
+        - feedback
+        - outcome
+    ResourceInput:
+      type: object
+      additionalProperties: false
+      properties:
+        institutionId:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 150
+          pattern: .*\S.*
+        description:
+          type: string
+          minLength: 1
+          maxLength: 3000
+          pattern: .*\S.*
+        category:
+          type: string
+          enum:
+            - room
+            - studio
+            - equipment
+            - workshop
+            - other
+        location:
+          type: string
+          minLength: 1
+          maxLength: 300
+          pattern: .*\S.*
+        latitude:
+          type: number
+          minimum: -90
+          maximum: 90
+        longitude:
+          type: number
+          minimum: -180
+          maximum: 180
+        currency:
+          type: string
+          pattern: ^[A-Z]{3}$
+        hourlyRate:
+          type: integer
+          minimum: 0
+          maximum: 10000000
+        externalHourlyRate:
+          type: integer
+          minimum: 0
+          maximum: 10000000
+        crossSchool:
+          type: boolean
+        requiresApproval:
+          type: boolean
+        safetyCode:
+          type: string
+          minLength: 1
+          maxLength: 100
+          pattern: .*\S.*
+          nullable: true
+        capacity:
+          type: integer
+          minimum: 1
+          maximum: 1000
+      required:
+        - institutionId
+        - name
+        - description
+        - category
+        - location
+        - latitude
+        - longitude
+        - currency
+        - hourlyRate
+        - externalHourlyRate
+        - crossSchool
+        - requiresApproval
+        - safetyCode
+        - capacity
+    Window:
+      type: object
+      additionalProperties: false
+      properties:
+        startsAt:
+          type: string
+          format: date-time
+        endsAt:
+          type: string
+          format: date-time
+      required:
+        - startsAt
+        - endsAt
+    ResourceWindow:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        resourceId:
+          type: string
+          format: uuid
+        startsAt:
+          type: string
+          format: date-time
+        endsAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - createdAt
+        - resourceId
+        - startsAt
+        - endsAt
+    SetWindows:
+      type: object
+      additionalProperties: false
+      properties:
+        windows:
+          type: array
+          items:
+            $ref: "#/components/schemas/Window"
+          maxItems: 100
+      required:
+        - windows
+    Availability:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        userId:
+          type: string
+          format: uuid
+        startsAt:
+          type: string
+          format: date-time
+        endsAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - createdAt
+        - userId
+        - startsAt
+        - endsAt
+    SafetyCredential:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        institutionId:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        safetyCode:
+          type: string
+          minLength: 1
+          maxLength: 100
+          pattern: .*\S.*
+        verifiedBy:
+          type: string
+          format: uuid
+        validUntil:
+          type: string
+          format: date-time
+        revokedAt:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+        - id
+        - createdAt
+        - institutionId
+        - userId
+        - safetyCode
+        - verifiedBy
+        - validUntil
+        - revokedAt
+    GrantSafety:
+      type: object
+      additionalProperties: false
+      properties:
+        institutionId:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        safetyCode:
+          type: string
+          minLength: 1
+          maxLength: 100
+          pattern: .*\S.*
+        validUntil:
+          type: string
+          format: date-time
+      required:
+        - institutionId
+        - userId
+        - safetyCode
+        - validUntil
+    SlotSearch:
+      type: object
+      additionalProperties: false
+      properties:
+        participantIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+          maxItems: 20
+          minItems: 1
+          uniqueItems: true
+        requiredParticipantIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+          maxItems: 20
+          uniqueItems: true
+        minimumAttendees:
+          type: integer
+          minimum: 1
+          maximum: 20
+        resourceId:
+          type: string
+          format: uuid
+        startsAt:
+          type: string
+          format: date-time
+        endsAt:
+          type: string
+          format: date-time
+        durationMinutes:
+          type: integer
+          minimum: 5
+          maximum: 480
+      required:
+        - participantIds
+        - resourceId
+        - startsAt
+        - endsAt
+        - durationMinutes
+    BuildSlot:
+      type: object
+      additionalProperties: false
+      properties:
+        startsAt:
+          type: string
+          format: date-time
+        endsAt:
+          type: string
+          format: date-time
+        resourceId:
+          type: string
+          format: uuid
+        availableParticipantIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+          maxItems: 20
+        estimatedTotalMinor:
+          type: integer
+          minimum: 0
+          maximum: 10000000
+        currency:
+          type: string
+          pattern: ^[A-Z]{3}$
+      required:
+        - startsAt
+        - endsAt
+        - resourceId
+        - availableParticipantIds
+        - estimatedTotalMinor
+        - currency
+    BookingInput:
+      type: object
+      additionalProperties: false
+      properties:
+        resourceId:
+          type: string
+          format: uuid
+        projectId:
+          type: string
+          format: uuid
+        startsAt:
+          type: string
+          format: date-time
+        endsAt:
+          type: string
+          format: date-time
+        attendees:
+          type: array
+          items:
+            type: string
+            format: uuid
+          maxItems: 20
+          minItems: 1
+          uniqueItems: true
+        voucherCode:
+          type: string
+          minLength: 1
+          maxLength: 64
+          pattern: .*\S.*
+      required:
+        - resourceId
+        - projectId
+        - startsAt
+        - endsAt
+        - attendees
+    BookingQuote:
+      type: object
+      additionalProperties: false
+      properties:
+        resourceId:
+          type: string
+          format: uuid
+        resourceVersion:
+          type: integer
+          minimum: 1
+          maximum: 10000000
+        startsAt:
+          type: string
+          format: date-time
+        endsAt:
+          type: string
+          format: date-time
+        currency:
+          type: string
+          pattern: ^[A-Z]{3}$
+        subtotalMinor:
+          type: integer
+          minimum: 0
+          maximum: 10000000
+        discountMinor:
+          type: integer
+          minimum: 0
+          maximum: 10000000
+        totalMinor:
+          type: integer
+          minimum: 0
+          maximum: 10000000
+        requiresApproval:
+          type: boolean
+        voucherId:
+          type: string
+          format: uuid
+          nullable: true
+        validUntil:
+          type: string
+          format: date-time
+        paymentMode:
+          type: string
+          enum:
+            - school_managed
+      required:
+        - resourceId
+        - resourceVersion
+        - startsAt
+        - endsAt
+        - currency
+        - subtotalMinor
+        - discountMinor
+        - totalMinor
+        - requiresApproval
+        - voucherId
+        - validUntil
+        - paymentMode
+    Booking:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        resourceId:
+          type: string
+          format: uuid
+        projectId:
+          type: string
+          format: uuid
+        bookedBy:
+          type: string
+          format: uuid
+        startsAt:
+          type: string
+          format: date-time
+        endsAt:
+          type: string
+          format: date-time
+        attendees:
+          type: array
+          items:
+            type: string
+            format: uuid
+          maxItems: 20
+        currency:
+          type: string
+          pattern: ^[A-Z]{3}$
+        subtotalMinor:
+          type: integer
+          minimum: 0
+          maximum: 10000000
+        discountMinor:
+          type: integer
+          minimum: 0
+          maximum: 10000000
+        totalMinor:
+          type: integer
+          minimum: 0
+          maximum: 10000000
+        voucherId:
+          type: string
+          format: uuid
+          nullable: true
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true
+        state:
+          type: string
+          enum:
+            - pending
+            - confirmed
+            - cancelled
+            - rejected
+            - expired
+            - completed
+            - no_show
+        decisionReason:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          pattern: .*\S.*
+          nullable: true
+        version:
+          type: integer
+          minimum: 1
+          maximum: 10000000
+      required:
+        - id
+        - createdAt
+        - resourceId
+        - projectId
+        - bookedBy
+        - startsAt
+        - endsAt
+        - attendees
+        - currency
+        - subtotalMinor
+        - discountMinor
+        - totalMinor
+        - voucherId
+        - expiresAt
+        - state
+        - decisionReason
+        - version
+    BookingDecision:
+      type: object
+      additionalProperties: false
+      properties:
+        version:
+          type: integer
+          minimum: 1
+          maximum: 10000000
+        decision:
+          type: string
+          enum:
+            - confirmed
+            - cancelled
+            - rejected
+            - completed
+            - no_show
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          pattern: .*\S.*
+      required:
+        - version
+        - decision
+        - reason
+    ConsultationSlot:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        institutionId:
+          type: string
+          format: uuid
+        hostId:
+          type: string
+          format: uuid
+        startsAt:
+          type: string
+          format: date-time
+        endsAt:
+          type: string
+          format: date-time
+        location:
+          type: string
+          minLength: 1
+          maxLength: 300
+          pattern: .*\S.*
+        crossSchool:
+          type: boolean
+        active:
+          type: boolean
+      required:
+        - id
+        - createdAt
+        - institutionId
+        - hostId
+        - startsAt
+        - endsAt
+        - location
+        - crossSchool
+        - active
+    CreateConsultationSlot:
+      type: object
+      additionalProperties: false
+      properties:
+        institutionId:
+          type: string
+          format: uuid
+        startsAt:
+          type: string
+          format: date-time
+        endsAt:
+          type: string
+          format: date-time
+        location:
+          type: string
+          minLength: 1
+          maxLength: 300
+          pattern: .*\S.*
+        crossSchool:
+          type: boolean
+      required:
+        - institutionId
+        - startsAt
+        - endsAt
+        - location
+        - crossSchool
+    Consultation:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        slotId:
+          type: string
+          format: uuid
+        projectId:
+          type: string
+          format: uuid
+        bookedBy:
+          type: string
+          format: uuid
+        topic:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          pattern: .*\S.*
+        state:
+          type: string
+          enum:
+            - booked
+            - cancelled
+            - completed
+        version:
+          type: integer
+          minimum: 1
+          maximum: 10000000
+        startsAt:
+          type: string
+          format: date-time
+        endsAt:
+          type: string
+          format: date-time
+        location:
+          type: string
+          minLength: 1
+          maxLength: 300
+          pattern: .*\S.*
+        hostId:
+          type: string
+          format: uuid
+        hostDisplayName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          pattern: .*\S.*
+        institutionId:
+          type: string
+          format: uuid
+      required:
+        - id
+        - createdAt
+        - slotId
+        - projectId
+        - bookedBy
+        - topic
+        - state
+        - version
+        - startsAt
+        - endsAt
+        - location
+        - hostId
+        - hostDisplayName
+        - institutionId
+    BookConsultation:
+      type: object
+      additionalProperties: false
+      properties:
+        slotId:
+          type: string
+          format: uuid
+        projectId:
+          type: string
+          format: uuid
+        topic:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          pattern: .*\S.*
+      required:
+        - slotId
+        - projectId
+        - topic
+    ConsultationDecision:
+      type: object
+      additionalProperties: false
+      properties:
+        version:
+          type: integer
+          minimum: 1
+          maximum: 10000000
+        decision:
+          type: string
+          enum:
+            - cancelled
+            - completed
+      required:
+        - version
+        - decision
+    Message:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        projectId:
+          type: string
+          format: uuid
+        senderId:
+          type: string
+          format: uuid
+        body:
+          type: string
+          minLength: 1
+          maxLength: 4000
+          pattern: .*\S.*
+      required:
+        - id
+        - createdAt
+        - projectId
+        - senderId
+        - body
+    SendMessage:
+      type: object
+      additionalProperties: false
+      properties:
+        body:
+          type: string
+          minLength: 1
+          maxLength: 4000
+          pattern: .*\S.*
+      required:
+        - body
+    Notification:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        recipientId:
+          type: string
+          format: uuid
+        type:
+          type: string
+          minLength: 1
+          maxLength: 100
+          pattern: .*\S.*
+        subjectId:
+          type: string
+          format: uuid
+        readAt:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+        - id
+        - createdAt
+        - recipientId
+        - type
+        - subjectId
+        - readAt
+    PublicProject:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        title:
+          type: string
+          minLength: 1
+          maxLength: 150
+          pattern: .*\S.*
+        summary:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          pattern: .*\S.*
+        projectType:
+          type: string
+          enum:
+            - business
+            - engineering
+            - creative
+            - community
+            - other
+        tags:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 40
+            pattern: .*\S.*
+          maxItems: 10
+        seeking:
+          type: string
+          minLength: 0
+          maxLength: 1000
+        published:
+          type: boolean
+        version:
+          type: integer
+          minimum: 1
+          maximum: 10000000
+        updatedAt:
+          type: string
+          format: date-time
+        shareUrl:
+          type: string
+          format: uri
+      required:
+        - id
+        - createdAt
+        - title
+        - summary
+        - projectType
+        - tags
+        - seeking
+        - published
+        - version
+        - updatedAt
+        - shareUrl
+    PublishProject:
+      type: object
+      additionalProperties: false
+      properties:
+        version:
+          type: integer
+          minimum: 1
+          maximum: 10000000
+        title:
+          type: string
+          minLength: 1
+          maxLength: 150
+          pattern: .*\S.*
+        summary:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          pattern: .*\S.*
+        tags:
+          type: array
+          items:
+            type: string
+            minLength: 1
+            maxLength: 40
+            pattern: .*\S.*
+          maxItems: 10
+          uniqueItems: true
+        seeking:
+          type: string
+          minLength: 0
+          maxLength: 1000
+      required:
+        - version
+        - title
+        - summary
+        - tags
+        - seeking
+    CollaborationRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        projectId:
+          type: string
+          format: uuid
+        requesterId:
+          type: string
+          format: uuid
+        message:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          pattern: .*\S.*
+        kind:
+          type: string
+          enum:
+            - advice
+            - join
+        state:
+          type: string
+          enum:
+            - pending
+            - accepted
+            - declined
+            - withdrawn
+        response:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          pattern: .*\S.*
+          nullable: true
+        version:
+          type: integer
+          minimum: 1
+          maximum: 10000000
+      required:
+        - id
+        - createdAt
+        - projectId
+        - requesterId
+        - message
+        - kind
+        - state
+        - response
+        - version
+    RequestCollaboration:
+      type: object
+      additionalProperties: false
+      properties:
+        message:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          pattern: .*\S.*
+        kind:
+          type: string
+          enum:
+            - advice
+            - join
+      required:
+        - message
+        - kind
+    DecideCollaboration:
+      type: object
+      additionalProperties: false
+      properties:
+        version:
+          type: integer
+          minimum: 1
+          maximum: 10000000
+        decision:
+          type: string
+          enum:
+            - accepted
+            - declined
+            - withdrawn
+        response:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          pattern: .*\S.*
+      required:
+        - version
+        - decision
+    ContentReport:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        projectId:
+          type: string
+          format: uuid
+        reporterId:
+          type: string
+          format: uuid
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          pattern: .*\S.*
+        state:
+          type: string
+          enum:
+            - pending
+            - dismissed
+            - removed
+      required:
+        - id
+        - createdAt
+        - projectId
+        - reporterId
+        - reason
+        - state
+    ReportContent:
+      type: object
+      additionalProperties: false
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          pattern: .*\S.*
+      required:
+        - reason
+    ModerateReport:
+      type: object
+      additionalProperties: false
+      properties:
+        decision:
+          type: string
+          enum:
+            - dismissed
+            - removed
+      required:
+        - decision
+    Voucher:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        institutionId:
+          type: string
+          format: uuid
+        code:
+          type: string
+          minLength: 1
+          maxLength: 64
+          pattern: .*\S.*
+        currency:
+          type: string
+          pattern: ^[A-Z]{3}$
+        discountMinor:
+          type: integer
+          minimum: 1
+          maximum: 10000000
+        budgetMinor:
+          type: integer
+          minimum: 1
+          maximum: 10000000
+        maxRedemptions:
+          type: integer
+          minimum: 1
+          maximum: 10000000
+        validUntil:
+          type: string
+          format: date-time
+        active:
+          type: boolean
+      required:
+        - id
+        - createdAt
+        - institutionId
+        - code
+        - currency
+        - discountMinor
+        - budgetMinor
+        - maxRedemptions
+        - validUntil
+        - active
+    CreateVoucher:
+      type: object
+      additionalProperties: false
+      properties:
+        institutionId:
+          type: string
+          format: uuid
+        code:
+          type: string
+          minLength: 1
+          maxLength: 64
+          pattern: ^[A-Z0-9_-]{3,64}$
+        currency:
+          type: string
+          pattern: ^[A-Z]{3}$
+        discountMinor:
+          type: integer
+          minimum: 1
+          maximum: 10000000
+        budgetMinor:
+          type: integer
+          minimum: 1
+          maximum: 10000000
+        maxRedemptions:
+          type: integer
+          minimum: 1
+          maximum: 10000000
+        validUntil:
+          type: string
+          format: date-time
+      required:
+        - institutionId
+        - code
+        - currency
+        - discountMinor
+        - budgetMinor
+        - maxRedemptions
+        - validUntil
+    CreditEntry:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        voucherId:
+          type: string
+          format: uuid
+        bookingId:
+          type: string
+          format: uuid
+        amountMinor:
+          type: integer
+        kind:
+          type: string
+          enum:
+            - redeem
+            - release
+      required:
+        - id
+        - createdAt
+        - voucherId
+        - bookingId
+        - amountMinor
+        - kind
+    Resource:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        institutionId:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 150
+          pattern: .*\S.*
+        description:
+          type: string
+          minLength: 1
+          maxLength: 3000
+          pattern: .*\S.*
+        category:
+          type: string
+          enum:
+            - room
+            - studio
+            - equipment
+            - workshop
+            - other
+        location:
+          type: string
+          minLength: 1
+          maxLength: 300
+          pattern: .*\S.*
+        latitude:
+          type: number
+          minimum: -90
+          maximum: 90
+        longitude:
+          type: number
+          minimum: -180
+          maximum: 180
+        currency:
+          type: string
+          pattern: ^[A-Z]{3}$
+        hourlyRate:
+          type: integer
+          minimum: 0
+          maximum: 10000000
+        externalHourlyRate:
+          type: integer
+          minimum: 0
+          maximum: 10000000
+        crossSchool:
+          type: boolean
+        requiresApproval:
+          type: boolean
+        safetyCode:
+          type: string
+          minLength: 1
+          maxLength: 100
+          pattern: .*\S.*
+          nullable: true
+        capacity:
+          type: integer
+          minimum: 1
+          maximum: 1000
+        active:
+          type: boolean
+        version:
+          type: integer
+          minimum: 1
+          maximum: 10000000
+        distanceKm:
+          type: number
+          minimum: 0
+          nullable: true
+      required:
+        - id
+        - createdAt
+        - institutionId
+        - name
+        - description
+        - category
+        - location
+        - latitude
+        - longitude
+        - currency
+        - hourlyRate
+        - externalHourlyRate
+        - crossSchool
+        - requiresApproval
+        - safetyCode
+        - capacity
+        - active
+        - version
+        - distanceKm
+    UpdateResource:
+      type: object
+      additionalProperties: false
+      properties:
+        version:
+          type: integer
+          minimum: 1
+          maximum: 10000000
+        name:
+          type: string
+          minLength: 1
+          maxLength: 150
+          pattern: .*\S.*
+        description:
+          type: string
+          minLength: 1
+          maxLength: 3000
+          pattern: .*\S.*
+        category:
+          type: string
+          enum:
+            - room
+            - studio
+            - equipment
+            - workshop
+            - other
+        location:
+          type: string
+          minLength: 1
+          maxLength: 300
+          pattern: .*\S.*
+        latitude:
+          type: number
+          minimum: -90
+          maximum: 90
+        longitude:
+          type: number
+          minimum: -180
+          maximum: 180
+        currency:
+          type: string
+          pattern: ^[A-Z]{3}$
+        hourlyRate:
+          type: integer
+          minimum: 0
+          maximum: 10000000
+        externalHourlyRate:
+          type: integer
+          minimum: 0
+          maximum: 10000000
+        crossSchool:
+          type: boolean
+        requiresApproval:
+          type: boolean
+        safetyCode:
+          type: string
+          minLength: 1
+          maxLength: 100
+          pattern: .*\S.*
+          nullable: true
+        capacity:
+          type: integer
+          minimum: 1
+          maximum: 1000
+        active:
+          type: boolean
+      required:
+        - version
+    CreateBooking:
+      type: object
+      additionalProperties: false
+      properties:
+        resourceId:
+          type: string
+          format: uuid
+        projectId:
+          type: string
+          format: uuid
+        startsAt:
+          type: string
+          format: date-time
+        endsAt:
+          type: string
+          format: date-time
+        attendees:
+          type: array
+          items:
+            type: string
+            format: uuid
+          maxItems: 20
+          minItems: 1
+          uniqueItems: true
+        voucherCode:
+          type: string
+          minLength: 1
+          maxLength: 64
+          pattern: .*\S.*
+        resourceVersion:
+          type: integer
+          minimum: 1
+          maximum: 10000000
+        expectedTotalMinor:
+          type: integer
+          minimum: 0
+          maximum: 10000000
+      required:
+        - resourceId
+        - projectId
+        - startsAt
+        - endsAt
+        - attendees
+        - resourceVersion
+        - expectedTotalMinor
+    StaffMember:
+      type: object
+      additionalProperties: false
+      properties:
+        userId:
+          type: string
+          format: uuid
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          pattern: .*\S.*
+      required:
+        - userId
+        - displayName
+    ProjectFile:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        projectId:
+          type: string
+          format: uuid
+        uploadedBy:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 150
+          pattern: .*\S.*
+        mimeType:
+          type: string
+          enum:
+            - image/jpeg
+            - image/png
+            - image/webp
+            - application/pdf
+        sizeBytes:
+          type: integer
+          minimum: 1
+          maximum: 2097152
+        sha256:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+      required:
+        - id
+        - createdAt
+        - projectId
+        - uploadedBy
+        - name
+        - mimeType
+        - sizeBytes
+        - sha256
+    UploadFile:
+      type: object
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 150
+          pattern: .*\S.*
+        mimeType:
+          type: string
+          enum:
+            - image/jpeg
+            - image/png
+            - image/webp
+            - application/pdf
+        contentBase64:
+          type: string
+          minLength: 4
+          maxLength: 2796204
+          pattern: ^[A-Za-z0-9+/]+={0,2}$
+      required:
+        - name
+        - mimeType
+        - contentBase64
+    FileContent:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        projectId:
+          type: string
+          format: uuid
+        uploadedBy:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 150
+          pattern: .*\S.*
+        mimeType:
+          type: string
+          enum:
+            - image/jpeg
+            - image/png
+            - image/webp
+            - application/pdf
+        sizeBytes:
+          type: integer
+          minimum: 1
+          maximum: 2097152
+        sha256:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        contentBase64:
+          type: string
+          maxLength: 2796204
+      required:
+        - id
+        - createdAt
+        - projectId
+        - uploadedBy
+        - name
+        - mimeType
+        - sizeBytes
+        - sha256
+        - contentBase64

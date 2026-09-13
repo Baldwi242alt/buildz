@@ -1,0 +1,56 @@
+# Free-only hackathon deployment. Run infra/supabase-cron.sql for hosted expiry.
+# This file does not provision anything until the repository owner deploys it.
+services:
+  - type: web
+    name: buildz-web
+    runtime: static
+    buildCommand: npm ci && npm run build --workspace @buildz/web
+    staticPublishPath: ./apps/web/dist
+    autoDeployTrigger: off
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: NODE_VERSION
+        value: "24"
+      - key: VITE_BUILDZ_API_BASE_URL
+        sync: false
+      - key: VITE_BUILDZ_AUTH_URL
+        sync: false
+      - key: VITE_BUILDZ_AUTH_PUBLISHABLE_KEY
+        sync: false
+      - key: VITE_BUILDZ_LOCAL_DEMO
+        value: "false"
+  - type: web
+    name: buildz-api
+    runtime: docker
+    dockerfilePath: ./infra/Dockerfile.api
+    dockerContext: .
+    region: singapore
+    plan: free
+    autoDeployTrigger: off
+    healthCheckPath: /v1/health/ready
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_SSL
+        value: "true"
+      - key: DATABASE_URL
+        sync: false
+      - key: TRUST_PROXY_HOPS
+        sync: false
+      - key: AUTH_ISSUER
+        sync: false
+      - key: AUTH_JWKS_URL
+        sync: false
+      - key: AUTH_USERINFO_URL
+        sync: false
+      - key: AUTH_AUDIENCE
+        value: authenticated
+      - key: AUTH_PUBLISHABLE_KEY
+        sync: false
+      - key: APP_ORIGIN
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false

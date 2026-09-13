@@ -1,0 +1,19 @@
+FROM node:24-bookworm-slim AS build
+WORKDIR /app
+COPY . .
+RUN npm ci --ignore-scripts
+RUN npm run build:backend
+
+FROM node:24-bookworm-slim AS runtime
+ENV NODE_ENV=production
+WORKDIR /app
+COPY package.json package-lock.json ./
+COPY packages/sdk/package.json ./packages/sdk/package.json
+RUN npm ci --omit=dev --workspaces=false --ignore-scripts && npm cache clean --force
+COPY --from=build /app/dist ./dist
+COPY --from=build /app/packages/contracts ./packages/contracts
+COPY infra/certs/supabase-prod-ca-2021.crt ./infra/certs/supabase-prod-ca-2021.crt
+ENV NODE_EXTRA_CA_CERTS=/app/infra/certs/supabase-prod-ca-2021.crt
+USER node
+EXPOSE 3001
+CMD ["node", "dist/apps/api/src/main.js"]
